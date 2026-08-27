@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>เรียงเอกสารตามวันที่</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{
+  --paper: #EAE6DB;
+  --paper-card: #F6F3EA;
+  --ink: #26314A;
+  --ink-soft: #5B6478;
+  --stamp: #A2402C;
+  --stamp-dark: #7C2F20;
+  --line: #C7BFA9;
+  --teal: #4F6E67;
+  --warn-bg: #F1DFCF;
+  --good-bg: #E1E7DC;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse at top left, rgba(255,255,255,0.35), transparent 55%),
+    var(--paper);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', sans-serif;
+  min-height:100vh;
+  padding:32px 20px 60px;
+}
+.app{max-width:1080px;margin:0 auto;}
+header{
+  border-bottom:2px solid var(--ink);
+  padding-bottom:18px;
+  margin-bottom:28px;
+}
+header h1{
+  font-family:'Special Elite', cursive;
+  font-weight:400;
+  font-size:30px;
+  letter-spacing:0.5px;
+  margin:0 0 6px;
+  color:var(--ink);
+}
+header p{margin:0;color:var(--ink-soft);font-size:14px;max-width:640px;line-height:1.5;}
+.eyebrow{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:2px;
+  color:var(--stamp);
+  text-transform:uppercase;
+  margin:0 0 4px;
+}
+main{display:grid;grid-template-columns:1fr;gap:28px;}
+.dropzone{
+  border:2px dashed var(--line);
+  border-radius:4px;
+  background:var(--paper-card);
+  padding:26px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .15s ease, background .15s ease;
+}
+.dropzone.drag{border-color:var(--stamp);background:var(--warn-bg);}
+.dropzone svg{opacity:.55;margin-bottom:8px;}
+.dropzone .title{font-weight:600;font-size:15px;margin-bottom:4px;}
+.dropzone .sub{font-size:12.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+#fileInput{display:none;}
+.progress-wrap{display:flex;align-items:center;gap:10px;margin-top:14px;}
+.progress-bar{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden;}
+.progress-fill{
+  height:100%;width:4%;border-radius:4px;
+  transition:width .25s ease;
+  background-image: repeating-linear-gradient(135deg, var(--stamp), var(--stamp) 9px, var(--stamp-dark) 9px, var(--stamp-dark) 18px);
+  background-size: 26px 26px;
+  animation: progressStripes 0.9s linear infinite;
+}
+@keyframes progressStripes{
+  from{ background-position: 0 0; }
+  to{ background-position: 26px 0; }
+}
+.progress-label{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);min-width:88px;text-align:right;white-space:nowrap;}
+.queue{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+.queue-item{
+  display:flex;align-items:center;gap:12px;
+  background:var(--paper-card);
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:10px 12px;
+  font-size:13px;
+}
+.queue-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
+.queue-item .status{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+.spinner{
+  width:13px;height:13px;border-radius:50%;
+  border:2px solid var(--line);border-top-color:var(--stamp);
+  animation:spin .7s linear infinite;flex-shrink:0;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.section-title{
+  font-family:'Special Elite', cursive;
+  font-size:18px;font-weight:400;
+  margin:0 0 4px;
+}
+.section-sub{font-size:13px;color:var(--ink-soft);margin:0 0 16px;}
+.timeline-wrap{
+  background:var(--paper-card);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:28px 24px 20px;
+  overflow-x:auto;
+}
+.timeline-track{
+  position:relative;
+  height:2px;
+  background:var(--line);
+  margin:38px 10px 46px;
+  min-width:600px;
+}
+.timeline-track .end-label{
+  position:absolute;top:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+}
+.timeline-track .end-label.start{left:0;}
+.timeline-track .end-label.end{right:0;text-align:right;}
+.marker{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;
+  cursor:default;
+}
+.stamp{
+  font-family:'Special Elite', cursive;
+  font-size:10.5px;
+  color:var(--stamp);
+  border:1.5px solid var(--stamp);
+  border-radius:3px;
+  padding:2px 6px;
+  transform:rotate(-5deg);
+  white-space:nowrap;
+  background:rgba(246,243,234,0.9);
+  animation:stampIn .35s ease-out;
+}
+@keyframes stampIn{
+  0%{opacity:0;transform:rotate(-5deg) scale(2.4);}
+  60%{opacity:1;}
+  100%{opacity:1;transform:rotate(-5deg) scale(1);}
+}
+.marker .dot{width:9px;height:9px;border-radius:50%;background:var(--ink);margin-top:6px;border:2px solid var(--paper-card);}
+.marker .fname{
+  margin-top:5px;font-size:10px;color:var(--ink-soft);max-width:100px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;
+}
+.empty-note{font-size:13px;color:var(--ink-soft);font-style:italic;text-align:center;padding:20px 0;}
+.table-wrap{overflow-x:auto;border-radius:4px;}
+table{width:100%;border-collapse:collapse;background:var(--paper-card);border:1px solid var(--line);border-radius:4px;overflow:hidden;min-width:720px;}
+thead th{
+  text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;
+  text-transform:uppercase;color:var(--ink-soft);
+  border-bottom:1px solid var(--line);padding:10px 12px;
+}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:rgba(0,0,0,0.02);}
+.order-badge{
+  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;
+  background:var(--ink);color:var(--paper-card);
+  border-radius:3px;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;
+}
+.badge{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 7px;border-radius:10px;
+  white-space:nowrap;
+}
+.badge.auto{background:var(--good-bg);color:var(--teal);}
+.badge.missing{background:var(--warn-bg);color:var(--stamp-dark);}
+.badge.guess{background:var(--warn-bg);color:var(--ink);}
+.datecell{font-family:'IBM Plex Mono',monospace;font-size:13px;white-space:nowrap;}
+.srccell{font-size:12px;color:var(--ink-soft);}
+.companycell{
+  font-weight:500;
+}
+.companycell.empty{color:var(--ink-soft);font-weight:400;font-style:italic;}
+.companycell.guessed{font-style:italic;text-decoration:underline dotted var(--ink-soft);text-underline-offset:2px;}
+/* A flex row rather than plain inline content: the edit (✎) button must
+   NEVER be clippable by the cell-value's text truncation, no matter how
+   long or garbled that text is — it sits outside the shrinking part of the
+   row instead of after it in normal flow, where overflow:hidden on a long
+   value used to push it out of view entirely (making exactly the rows that
+   most needed correcting the ones nobody could click "edit" on). */
+.editable-cell{position:relative;display:flex;align-items:center;gap:2px;min-width:0;}
+.cell-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;}
+.companycell .cell-value{max-width:220px;}
+.edit-btn{
+  background:none;border:none;cursor:pointer;font-size:11px;padding:0 0 0 6px;
+  opacity:0.35;vertical-align:middle;flex-shrink:0;
+}
+.edit-btn:hover{opacity:1;}
+.warn-flag{color:var(--stamp-dark);font-size:12px;margin-right:4px;cursor:help;flex-shrink:0;}
+.edit-picker{display:flex;flex-direction:column;gap:4px;min-width:200px;}
+.edit-picker select, .edit-picker input[type=text]{
+  font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;padding:4px 6px;
+  border:1px solid var(--line);border-radius:3px;background:var(--paper-card);color:var(--ink);
+  max-width:260px;
+}
+.edit-picker .edit-actions{display:flex;gap:6px;}
+.edit-picker .edit-actions button{
+  font-family:'IBM Plex Sans',sans-serif;font-size:11.5px;padding:3px 9px;border-radius:3px;
+  cursor:pointer;border:1px solid var(--line);background:var(--paper-card);color:var(--ink);
+}
+.edit-picker .edit-actions button.save{border-color:var(--teal);color:var(--teal);font-weight:600;}
+.overridden-mark{color:var(--teal);font-size:11px;margin-left:4px;flex-shrink:0;}
+.order-cell{display:flex;align-items:center;gap:6px;}
+.move-btns{display:inline-flex;flex-direction:column;gap:1px;}
+.move-btn{
+  background:none;border:none;cursor:pointer;font-size:9px;line-height:1;padding:1px 3px;
+  color:var(--ink-soft);border-radius:2px;
+}
+.move-btn:hover:not(:disabled){background:var(--warn-bg);color:var(--ink);}
+.move-btn:disabled{opacity:.25;cursor:not-allowed;}
+.include-toggle{width:15px;height:15px;cursor:pointer;accent-color:var(--teal);}
+tbody tr.excluded-row{opacity:.42;}
+tbody tr.excluded-row:hover{background:transparent;}
+.actions{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;}
+button.primary, button.secondary{
+  font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;
+  border-radius:3px;padding:11px 20px;cursor:pointer;border:1.5px solid var(--stamp);
+  transition:transform .1s ease;
+}
+button.primary{background:var(--stamp);color:#fff;}
+button.primary:hover{background:var(--stamp-dark);}
+button.secondary{background:transparent;color:var(--stamp);}
+button.secondary:hover{background:var(--warn-bg);}
+button:disabled{opacity:.4;cursor:not-allowed;}
+button:active:not(:disabled){transform:scale(0.98);}
+button.ready{animation:readyPulse 1.4s ease-in-out 2;}
+@keyframes readyPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(162,64,44,0.35);}
+  50%{box-shadow:0 0 0 8px rgba(162,64,44,0);}
+}
+.note{font-size:12.5px;color:var(--ink-soft);margin-top:10px;}
+footer{margin-top:34px;font-size:11.5px;color:var(--ink-soft);text-align:center;font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <p class="eyebrow">Document Timeline Utility</p>
+    <h1>เรียงเอกสารตามวันที่</h1>
+    <p>อัปโหลด PDF ได้ทั้งแบบหลายไฟล์ หรือไฟล์เดียวที่รวมเอกสารหลายฉบับไว้ข้างใน (เช่นสแกนใบเสร็จหลายใบต่อกันเป็นไฟล์เดียว) ระบบจะอ่านทีละหน้า แยกว่าหน้าไหนเป็นเอกสารฉบับไหน หาวันที่ของแต่ละฉบับ พร้อมใช้ OCR ดึง <strong>ชื่อบริษัท</strong> ที่ปรากฏในเอกสารแต่ละฉบับ แล้วเรียงหน้าใหม่ให้ทั้งไฟล์โดยอัตโนมัติ</p>
+  </header>
+  <main>
+    <section>
+      <div class="dropzone" id="dropzone">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.6"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <div class="title">ลากไฟล์ PDF มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</div>
+        <div class="sub">รองรับทั้งหลายไฟล์ และไฟล์เดียวที่มีหลายเอกสารข้างใน · .pdf เท่านั้น</div>
+        <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple />
+      </div>
+      <div class="progress-wrap" id="progressWrap" style="display:none;">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-label" id="progressLabel">0%</div>
+      </div>
+      <div class="queue" id="queue"></div>
+    </section>
+    <section>
+      <p class="section-title">เส้นเวลาเอกสาร</p>
+      <p class="section-sub">แต่ละจุดคือเอกสาร 1 ฉบับที่ตรวจพบ เรียงจากซ้าย (เก่าสุด) ไปขวา (ใหม่สุด) — วางเมาส์บนจุดเพื่อดูชื่อบริษัทที่พบ</p>
+      <div class="timeline-wrap">
+        <div class="timeline-track" id="timelineTrack"></div>
+        <div id="timelineEmpty" class="empty-note">ยังไม่มีเอกสารที่อ่านวันที่ได้</div>
+      </div>
+    </section>
+    <section>
+      <p class="section-title">รายการเรียงลำดับ</p>
+      <p class="section-sub">เรียงอัตโนมัติจากวันที่ที่พบในแต่ละเอกสาร (ไม่ใช้ชื่อบริษัทในการเรียง) เอกสารที่หาวันที่ไม่เจอจะถูกวางไว้ท้ายรายการ — ใช้ปุ่ม ▲▼ เพื่อเรียงลำดับเองได้ถ้าระบบเรียงผิด และติ๊กออกเพื่อไม่รวมเอกสารที่ไม่ต้องการ (เช่น ถ่ายซ้ำไว้เฉยๆ)</p>
+      <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>รวม</th><th>#</th><th>เอกสาร</th><th>ที่มา</th><th>บริษัทที่พบ</th><th>วันที่ที่พบ</th><th>มูลค่าสินค้า/บริการ</th><th>ภาษีมูลค่าเพิ่ม</th><th>สถานะ</th></tr>
+        </thead>
+        <tbody id="resultsBody">
+          <tr><td colspan="9" class="empty-note">ยังไม่มีไฟล์ที่ประมวลผลแล้ว</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="actions">
+        <button class="primary" id="downloadMerged" disabled>ดาวน์โหลด PDF รวม (เรียงแล้ว)</button>
+        <button class="secondary" id="downloadZip" disabled>ดาวน์โหลด ZIP (แยกเอกสาร เรียงเลขนำหน้า)</button>
+        <button class="secondary" id="downloadCsv" disabled>ดาวน์โหลดรายการ (CSV)</button>
+        <button class="secondary" id="downloadListPdf" disabled>ดาวน์โหลดรายการ (PDF)</button>
+        <button class="secondary" id="resetOrder" style="display:none;">เรียงอัตโนมัติตามวันที่ (ยกเลิกการเรียงเอง)</button>
+      </div>
+      <p class="note" id="ocrNote" style="display:none;"></p>
+      <p class="note" id="missingNote" style="display:none;"></p>
+    </section>
+  </main>
+  <footer>ประมวลผลทั้งหมดในเบราว์เซอร์ของคุณ ไม่มีการอัปโหลดไฟล์ขึ้นเซิร์ฟเวอร์ใด ๆ</footer>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+/* ---------------- Date extraction ---------------- */
+const THAI_MONTHS_FULL = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const THAI_MONTHS_ABBR = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const EN_MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const EN_MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const KEYWORDS = ['วันที่ออก','วันที่','ลงวันที่','ว/ด/ป','Date','Dated','date'];
+// A bare "วันที่" ("date") also shows up on receipts in phrases that are NOT
+// the document's own date — most commonly a loyalty-points or promo expiry
+// line ("...หมดอายุในวันที่ 31-12-2028"), which otherwise looks exactly like
+// a labeled, high-confidence date match and can outscore the real one. Any
+// date whose nearby context contains one of these disqualifies it outright.
+const NEGATIVE_DATE_KEYWORDS = ['หมดอายุ','บัตรหมดอายุ','คะแนนหมดอายุ','สิทธิ์หมดอายุ','ใช้ได้ถึง','expire','expiry','exp.',
+  // "หมดอายุ" itself is sometimes garbled by OCR past what a small edit
+  // distance can bridge (real example: "หมดอายุใน" read as "บนหดคถายกน").
+  // "คะแนนสะสม" ("accumulated points") is the loyalty-program phrase that
+  // always precedes this kind of expiry line on Thai retail receipts, and
+  // tends to survive OCR more intact than "หมดอายุ" itself — so it's kept
+  // as a second, independent way to catch the same false-positive line.
+  'คะแนนสะสม','สะสม'];
+function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+// Some Thai OCR engines (Tesseract included, on this kind of receipt-printer
+// font) output the vowel SARA AM (ำ) as its two visual components —
+// NIKHAHIT (ํ) followed by SARA AA (า) — instead of the single precomposed
+// character. Unicode NFC normalization does NOT fix this: SARA AM has no
+// canonical decomposition in the Unicode standard, so the two forms are
+// genuinely different code-point sequences, not just different
+// normalizations of the same text. Concretely: "จำกัด" ("limited", part of
+// nearly every Thai company's legal name) OCR'd as "จํากัด" fails to match
+// the literal "จำกัด" in every extraction pattern that looks for it —
+// observed directly on a real scanned receipt, where it silently defeated
+// the formal "บริษัท ... จำกัด" company-name pattern. Re-composing the
+// decomposed form before any pattern match fixes this at the source.
+function normalizeThaiOcrText(s){
+  if(!s) return s;
+  return s.normalize('NFC').replace(/ํา/g, 'ำ');
+}
+function pad2(n){return String(n).padStart(2,'0');}
+function normalizeYear(y){
+  if(y > 2400) return y - 543; // Buddhist -> Gregorian
+  return y;
+}
+function makeCandidate(index, year, month, day, keywordBonus, isMonthName){
+  if(month<1||month>12) return null;
+  if(day<1||day>31) return null;
+  if(year<1990||year>2100) return null;
+  return {
+    index, year, month, day,
+    sortKey: year*10000 + month*100 + day,
+    display: `${pad2(day)}/${pad2(month)}/${year}`,
+    score: (keywordBonus?1000:0) + (isMonthName?10:0) - index*0.0001
+  };
+}
+function thaiMonthIndex(str){
+  let i = THAI_MONTHS_FULL.indexOf(str);
+  if(i>=0) return i;
+  i = THAI_MONTHS_ABBR.indexOf(str);
+  return i;
+}
+function enMonthIndex(str){
+  const clean = str.replace(/\.$/,'');
+  let i = EN_MONTHS_FULL.findIndex(m=>m.toLowerCase()===clean.toLowerCase());
+  if(i>=0) return i;
+  i = EN_MONTHS_ABBR.findIndex(m=>m.toLowerCase()===clean.toLowerCase());
+  return i;
+}
+// ---- Fuzzy substring matching (tolerant of small OCR misreads) ----
+// Thai OCR on low-quality receipt-printer/dot-matrix fonts routinely
+// confuses visually similar characters (ม/น, ป/ษ, ว/ๅ, ใ/ไ, dropped tone
+// marks, ...). A label like "หมดอายุ" can come back as "หนดอายุ" — one
+// character off — which silently defeats an exact-substring keyword check.
+// This was observed directly on a real scanned receipt: the negative
+// date-keyword check for "หมดอายุ" (expire) missed "หนดอายุ" and let the
+// loyalty-points expiry date win over the real issue date. fuzzyIncludes
+// tolerates a small edit distance so a near-miss OCR reading still counts.
+function levenshteinAtMost(a, b, limit){
+  const la = a.length, lb = b.length;
+  if(Math.abs(la-lb) > limit) return false;
+  let prev = new Array(lb+1);
+  for(let j=0;j<=lb;j++) prev[j] = j;
+  for(let i=1;i<=la;i++){
+    const cur = new Array(lb+1).fill(limit+1);
+    cur[0] = i;
+    const from = Math.max(1, i-limit), to = Math.min(lb, i+limit);
+    for(let j=from;j<=to;j++){
+      const cost = a[i-1]===b[j-1] ? 0 : 1;
+      const del = (cur[j-1]!==undefined) ? cur[j-1]+1 : Infinity;
+      const ins = (prev[j]!==undefined) ? prev[j]+1 : Infinity;
+      const sub = (prev[j-1]!==undefined) ? prev[j-1]+cost : Infinity;
+      cur[j] = Math.min(del, ins, sub);
+    }
+    prev = cur;
+  }
+  return prev[lb] <= limit;
+}
+function fuzzyIncludes(haystack, needle){
+  if(!needle) return false;
+  if(haystack.includes(needle)) return true; // fast path — exact match, the common case
+  const nlen = needle.length;
+  // Too short a needle fuzzed to distance 1 would match almost anything.
+  if(nlen < 3) return false;
+  const maxEdits = nlen <= 6 ? 1 : 2;
+  for(let start=0; start<haystack.length; start++){
+    for(let winLen=Math.max(1,nlen-maxEdits); winLen<=nlen+maxEdits; winLen++){
+      if(start+winLen>haystack.length) break;
+      if(levenshteinAtMost(haystack.substr(start,winLen), needle, maxEdits)) return true;
+    }
+  }
+  return false;
+}
+function hasKeywordNearby(text, idx, keywordList){
+  const list = keywordList || KEYWORDS;
+  const context = text.slice(Math.max(0, idx-25), idx);
+  return list.some(k => fuzzyIncludes(context, k));
+}
+// pdf.js/OCR line reconstruction often leaves large runs of whitespace
+// where a table/column layout used to be (padding between a label and a
+// far-right value, for instance), so a fixed character count looking
+// "nearby" can land mostly on blank padding instead of the actual
+// preceding words. Collapsing whitespace runs first, over a wider raw
+// slice, means the trailing N characters kept are always N characters of
+// real preceding text, not blank space.
+function collapsedContextBefore(text, idx, rawBack, keepChars){
+  const raw = text.slice(Math.max(0, idx-rawBack), idx);
+  const collapsed = raw.replace(/\s+/g, ' ');
+  return collapsed.slice(Math.max(0, collapsed.length - keepChars));
+}
+function hasNegativeDateKeywordNearby(text, idx){
+  const context = collapsedContextBefore(text, idx, 250, 60).toLowerCase();
+  return NEGATIVE_DATE_KEYWORDS.some(k => fuzzyIncludes(context, k.toLowerCase()));
+}
+function findDateCandidates(text){
+  text = normalizeThaiOcrText(text);
+  const candidates = [];
+  const pushIfValid = (c, idx) => { if(c && !hasNegativeDateKeywordNearby(text, idx)) candidates.push(c); };
+  const thAlt = [...THAI_MONTHS_FULL, ...THAI_MONTHS_ABBR].map(escapeRegex).join('|');
+  const enAlt = [...EN_MONTHS_FULL, ...EN_MONTHS_ABBR].map(escapeRegex).join('|');
+  {
+    const re = new RegExp(`(\\d{1,2})\\s*(?:เดือน\\s*)?(${thAlt})\\s*(?:พ\\.ศ\\.?\\s*)?(\\d{4})`, 'g');
+    let m;
+    while((m = re.exec(text))){
+      const mi = thaiMonthIndex(m[2]);
+      if(mi<0) continue;
+      const c = makeCandidate(m.index, normalizeYear(+m[3]), mi+1, +m[1], hasKeywordNearby(text,m.index), true);
+      pushIfValid(c, m.index);
+    }
+  }
+  {
+    // "Month Day, Year" e.g. "July 30, 2026" — also allow hyphens: "Jul-30-2026"
+    const re = new RegExp(`(${enAlt})\\.?[\\s\\-]+(\\d{1,2})(?:st|nd|rd|th)?,?[\\s\\-]+(\\d{4})`, 'gi');
+    let m;
+    while((m = re.exec(text))){
+      const mi = enMonthIndex(m[1]);
+      if(mi<0) continue;
+      const c = makeCandidate(m.index, normalizeYear(+m[3]), mi+1, +m[2], hasKeywordNearby(text,m.index), true);
+      pushIfValid(c, m.index);
+    }
+  }
+  {
+    // "Day Month Year" e.g. "30 July 2026" — also allow hyphens: "10-Jul-2026"
+    const re = new RegExp(`(\\d{1,2})(?:st|nd|rd|th)?[\\s\\-]+(${enAlt})\\.?,?[\\s\\-]+(\\d{4})`, 'gi');
+    let m;
+    while((m = re.exec(text))){
+      const mi = enMonthIndex(m[2]);
+      if(mi<0) continue;
+      const c = makeCandidate(m.index, normalizeYear(+m[3]), mi+1, +m[1], hasKeywordNearby(text,m.index), true);
+      pushIfValid(c, m.index);
+    }
+  }
+  {
+    const re = /(\d{4})-(\d{1,2})-(\d{1,2})/g;
+    let m;
+    while((m = re.exec(text))){
+      const c = makeCandidate(m.index, normalizeYear(+m[1]), +m[2], +m[3], hasKeywordNearby(text,m.index), false);
+      pushIfValid(c, m.index);
+    }
+  }
+  {
+    const re = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/g;
+    let m;
+    while((m = re.exec(text))){
+      const c = makeCandidate(m.index, normalizeYear(+m[3]), +m[2], +m[1], hasKeywordNearby(text,m.index), false);
+      pushIfValid(c, m.index);
+    }
+  }
+  return candidates;
+}
+// Returns the top N distinct-display date candidates, best score first.
+// Used both for the single "best guess" (bestDate, n=1) and to offer the
+// user a short list of alternates to pick from when the guess looks wrong —
+// OCR digit misreads are common enough on low-quality scans that "here's
+// the second-best reading" is often the actual right answer.
+function topDateCandidates(text, n){
+  const candidates = findDateCandidates(text);
+  candidates.sort((a,b)=>b.score-a.score);
+  const seen = new Set();
+  const out = [];
+  for(const c of candidates){
+    if(seen.has(c.display)) continue;
+    seen.add(c.display);
+    out.push(c);
+    if(out.length>=n) break;
+  }
+  return out;
+}
+function bestDate(text){
+  return topDateCandidates(text, 1)[0] || null;
+}
+/* ---------------- Company name extraction ---------------- */
+// Heuristic, regex-based (no ML): looks for common Thai/English legal-entity
+// patterns ("บริษัท ... จำกัด", "ห้างหุ้นส่วนจำกัด ...", "... Co., Ltd.",
+// "... Corporation", etc.) plus labeled fields ("ผู้ขาย:", "Vendor:", ...).
+// Every match is scored and the highest-scoring one is used, the same
+// approach as date extraction above.
+const COMPANY_KEYWORDS = ['ชื่อผู้ขาย','ผู้ขาย','ผู้ออกใบกำกับภาษี','ชื่อบริษัท','ผู้จำหน่าย','Vendor','Seller','Supplier','Bill From','Issued by','Sold by','Company'];
+// Text extracted from a PDF is often one long space-joined line with no real
+// newlines (pdf.js text items are joined with a single space), so a free-text
+// capture like "everything after the label" needs an explicit stop condition
+// or it swallows the next field too. This list is that stop condition: it's
+// checked as a lookahead, not matched into the result.
+const FIELD_BOUNDARY_LIST = ['เลขประจำตัว','เลขที่','ที่อยู่','โทร','แฟกซ์','วันที่','ลงวันที่','รวม','ยอดรวม','ภาษี','ผู้ซื้อ','ผู้ขาย','Date','Dated','Total','Subtotal','Amount','Tax','VAT','Invoice','Due','Address','Tel','Phone','Fax','Email','Attn','Bill','Ship','Page'];
+function fieldBoundaryLookahead(){
+  // No trailing \b here: JS regex treats Thai characters as non-word (\W),
+  // so a \b right after a Thai boundary word never matches and silently
+  // breaks the whole lookahead. The leading \s+ already keeps this from
+  // matching mid-word, which is enough.
+  const alt = FIELD_BOUNDARY_LIST.map(escapeRegex).join('|');
+  return `(?=\\s{2,}|[\\n\\r]|[:：]|\\s+(?:${alt})|$)`;
+}
+function cleanCompanyName(s){
+  return s.replace(/[\t ]+/g,' ').replace(/^[\s,.\-:：]+|[\s,.\-:：]+$/g,'').trim();
+}
+// A formal "บริษัท ... จำกัด" (or "Vendor:"-style) pattern matches ANY
+// registered company name in the text — including the document's
+// BUYER/customer, if the buyer also happens to be a registered company,
+// which is common on a Thai wholesale/tax invoice. Observed directly on a
+// real document: a supplier's invoice printed its own letterhead at the
+// top, then the customer's legal name under a "Customer information /
+// Name:" section further down — and without this check, the customer's
+// name outscored the actual vendor because "Name:" is itself a labeled
+// field, so it got the same keyword bonus a real "Vendor:" label would.
+// This looks for buyer/customer context near a match and heavily
+// deprioritizes it (rather than dropping it outright, so it's still used
+// as a last resort if it's the only company-shaped text found at all).
+const BUYER_CONTEXT_KEYWORDS = ['ข้อมูลลูกค้า','ลูกค้า','นามผู้ซื้อ','ผู้ซื้อ','ที่อยู่ลูกค้า','customer information','customer','bill to','sold to','ship to','attn','attention'];
+function hasBuyerContextNearby(text, idx){
+  // A wide raw window: a section header like "Customer information" can sit
+  // a full line (and a lot of column-layout padding) before the actual
+  // buyer name that follows it under a "Name:" field.
+  const context = collapsedContextBefore(text, idx, 220, 80).toLowerCase();
+  return BUYER_CONTEXT_KEYWORDS.some(k => fuzzyIncludes(context, k));
+}
+// Guards against ever showing OCR noise as if it were a real company name.
+// A badly scanned page can produce long runs of stray symbols and isolated
+// characters that — purely by chance — still fall between a "บริษัท"/
+// "จำกัด" pair, or get picked as "the biggest text on the page" by the
+// layout-guess fallback below, without looking anything like an actual
+// registered company name. Anything that fails this is treated as NOT
+// FOUND (left blank, and still editable) rather than displayed with false
+// confidence — precision over recall for this field, same priority the
+// user has been explicit about throughout.
+function isPlausibleCompanyName(name){
+  if(!name) return false;
+  const s = name.trim();
+  if(s.length < 2 || s.length > 80) return false;
+  if(/[\r\n]/.test(s)) return false;
+  // Characters that essentially never appear in a real company name but
+  // are common OCR-noise artifacts (stray table-rule glyphs, symbols the
+  // engine emits in place of an illegible mark, etc).
+  if(/[|=©§~^_{}\[\]<>@#*÷†‡]/.test(s)) return false;
+  const letterCount = (s.match(/[ก-๏a-zA-Z]/g) || []).length;
+  const totalNonSpace = s.replace(/\s/g,'').length;
+  if(totalNonSpace === 0 || letterCount / totalNonSpace < 0.6) return false;
+  // Heavy fragmentation — lots of isolated single characters separated by
+  // spaces, e.g. "= g g ร | z 3 : ๓ ๕" — is a strong OCR-noise signature; a
+  // real Thai or English company name essentially never looks like this.
+  const tokens = s.split(/\s+/).filter(Boolean);
+  const singleCharTokens = tokens.filter(t => t.length === 1).length;
+  if(tokens.length >= 4 && singleCharTokens / tokens.length > 0.4) return false;
+  return true;
+}
+function makeCompanyCandidate(index, name, keywordBonus, buyerContext){
+  const cleaned = cleanCompanyName(name);
+  if(!isPlausibleCompanyName(cleaned)) return null;
+  return {
+    index,
+    name: cleaned,
+    buyerContext: !!buyerContext,
+    score: (keywordBonus?500:0) + Math.min(cleaned.length,40) - index*0.0001 - (buyerContext?2000:0)
+  };
+}
+function findCompanyCandidates(text){
+  text = normalizeThaiOcrText(text);
+  const candidates = [];
+  // Company candidates have no negative-keyword concept (that's a
+  // date-only idea — see findDateCandidates); this just guards against a
+  // null candidate the same way pushIfValid does for dates.
+  const pushIfValid = (c) => { if(c) candidates.push(c); };
+  // Deliberately a literal space here, NOT "\s" — "\s" also matches a
+  // newline, and this character class feeds a LAZY quantifier (see below).
+  // If the very next "จำกัด" is misspelled by OCR (missing/garbled the sara
+  // am, e.g. "จากัด" instead of "จำกัด" — a common misread), the literal
+  // "จำกัด" this pattern requires won't match there, so a lazy quantifier
+  // that could also cross newlines would keep expanding across the WHOLE
+  // rest of the page hunting for the next occurrence — sweeping unrelated
+  // boilerplate text many lines down into the "company name" capture. This
+  // was observed directly on a real document. Restricting to a literal
+  // space keeps every match on a single line no matter what.
+  const THAI_CHARS = "\\u0E01-\\u0E5B0-9A-Za-z()&.,'\\- ";
+  // Thai limited company: บริษัท <name> จำกัด (มหาชน)?
+  {
+    const re = new RegExp(`บริษัท\\s+([${THAI_CHARS}]{2,80}?)\\s+จำกัด(\\s*\\(มหาชน\\))?`, 'g');
+    let m;
+    while((m = re.exec(text))){
+      const suffix = 'จำกัด' + (m[2] ? ' ' + m[2].trim() : '');
+      const c = makeCompanyCandidate(m.index, `บริษัท ${m[1]} ${suffix}`, true, hasBuyerContextNearby(text, m.index));
+      pushIfValid(c, m.index);
+    }
+  }
+  // Thai partnership: ห้างหุ้นส่วนจำกัด <name> / หจก. <name>
+  {
+    const re = new RegExp(`(?:ห้างหุ้นส่วนจำกัด|หจก\\.?)\\s+([${THAI_CHARS}]{2,60}?)${fieldBoundaryLookahead()}`, 'g');
+    let m;
+    while((m = re.exec(text))){
+      const c = makeCompanyCandidate(m.index, `หจก. ${m[1]}`, true, hasBuyerContextNearby(text, m.index));
+      pushIfValid(c, m.index);
+    }
+  }
+  // Keyword-labeled field: "ผู้ขาย: XXX", "Vendor: XXX", ...
+  // Note: COMPANY_KEYWORDS is seller-only (ผู้ขาย, Vendor, ...), so a match
+  // here already implies vendor context — but the captured name can still
+  // sit physically close to a buyer section on a dense layout, so the
+  // buyer-context check still runs as a safety net.
+  {
+    const kwAlt = COMPANY_KEYWORDS.map(escapeRegex).join('|');
+    const re = new RegExp(`(?:${kwAlt})\\s*[:：]\\s*([^\\n]{2,80}?)${fieldBoundaryLookahead()}`, 'gi');
+    let m;
+    while((m = re.exec(text))){
+      const c = makeCompanyCandidate(m.index, m[1], true, hasBuyerContextNearby(text, m.index));
+      pushIfValid(c, m.index);
+    }
+  }
+  // English legal suffix: "XYZ Co., Ltd.", "XYZ Corporation", "XYZ Inc.", ...
+  // Each word of the captured name must itself start with a capital letter
+  // (Title Case, as real company names are almost always written) rather
+  // than allowing any run of characters up to 60 long — the looser version
+  // of this pattern was observed matching straight through an unrelated
+  // sentence on a real document ("This document was issued by Fudo
+  // Solutions Co., Ltd." captured the whole clause as the "company name"
+  // instead of just "Fudo Solutions", since lowercase sentence words like
+  // "document"/"was"/"issued"/"by" satisfied the old character class just
+  // as well as a real name would).
+  {
+    const re = /([A-Z][A-Za-z0-9&.'-]*(?:\s+[A-Z][A-Za-z0-9&.'-]*){0,4})\s+(Co\.,?\s*Ltd\.?|Company\s+Limited|Corporation|Corp\.?|Inc\.?|LLC|PLC|Ltd\.?)\b/g;
+    let m;
+    while((m = re.exec(text))){
+      const keywordBonus = hasKeywordNearby(text, m.index, COMPANY_KEYWORDS);
+      const c = makeCompanyCandidate(m.index, `${m[1]} ${m[2]}`, keywordBonus, hasBuyerContextNearby(text, m.index));
+      pushIfValid(c, m.index);
+    }
+  }
+  return candidates;
+}
+// Same idea as topDateCandidates: top N distinct-name company candidates,
+// including ones deprioritized as buyer-context, so the user can still pick
+// one manually if the scoring guessed wrong.
+function topCompanyCandidates(text, n){
+  if(!text) return [];
+  const candidates = findCompanyCandidates(text);
+  candidates.sort((a,b)=>b.score-a.score);
+  const seen = new Set();
+  const out = [];
+  for(const c of candidates){
+    if(seen.has(c.name)) continue;
+    seen.add(c.name);
+    out.push(c);
+    if(out.length>=n) break;
+  }
+  return out;
+}
+function bestCompany(text){
+  const top = topCompanyCandidates(text, 1)[0];
+  return top ? {name: top.name, buyerContext: top.buyerContext} : null;
+}
+/* ---------------- Amount / VAT (manual entry only) ---------------- */
+// No automatic detection — company name and date are what this tool reads
+// automatically; amount/VAT are just a fillable field in the results table
+// (see FIELD_CONFIG and the inline editor), left blank until the user types
+// a value in. formatThaiNumber/parseManualAmount are what that manual entry
+// path uses to format and validate what's typed.
+function formatThaiNumber(v){
+  const parts = Math.abs(v).toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (v<0?'-':'') + parts.join('.');
+}
+function parseManualAmount(raw){
+  const cleaned = (raw||'').replace(/[,\s฿]/g,'').replace(/บาท$/,'').trim();
+  if(cleaned==='') return null;
+  const value = parseFloat(cleaned);
+  if(isNaN(value) || value < 0) return null;
+  return {value, display: formatThaiNumber(value)};
+}
+// ---- Layout-based fallback (page size/orientation independent) ----
+// The regex patterns above only catch FORMAL company names ("...จำกัด",
+// "...Co., Ltd.", or an explicit "Vendor:"-style label). Plenty of real
+// documents — a small shop's receipt, an informal invoice, a half-page or
+// landscape-oriented ticket — just print the business name as the biggest
+// line of text near the top, with no legal suffix and no labeled field at
+// all. This fallback looks for exactly that: it groups text into lines by
+// vertical position, and — restricted to lines near the top of the page —
+// picks the one with the largest font/text height, on the same logic a
+// person's eye would use ("what's the biggest text up top?"). It only runs
+// when the regex patterns above find nothing, and its result is marked
+// `guessed: true` so the UI can show it's a best-effort guess rather than a
+// confident match. This works the same regardless of the page's physical
+// size or orientation, since it's driven by relative position/size on that
+// specific page, not by a fixed pixel region.
+function groupLayoutItemsIntoLines(items){
+  const withText = items.filter(it => it.str && it.str.trim().length > 0);
+  if(withText.length === 0) return [];
+  const sorted = [...withText].sort((a,b)=> a.yTop - b.yTop || a.xLeft - b.xLeft);
+  const TOL = 2.2; // points — items within this vertical band are considered the same line
+  const lines = [];
+  for(const it of sorted){
+    let line = lines[lines.length-1];
+    if(!line || Math.abs(line.yTop - it.yTop) > TOL){
+      line = {yTop: it.yTop, items: [], pageHeight: it.pageHeight};
+      lines.push(line);
+    }
+    line.items.push(it);
+    line.yTop = (line.yTop*(line.items.length-1) + it.yTop) / line.items.length; // running average
+  }
+  return lines.map(l => {
+    const text = l.items.sort((a,b)=>a.xLeft-b.xLeft).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim();
+    const fontHeight = Math.max(...l.items.map(i=>i.fontHeight));
+    return {text, fontHeight, yTop: l.yTop, pageHeight: l.pageHeight};
+  });
+}
+function guessCompanyFromLayout(layoutItems){
+  if(!layoutItems || layoutItems.length === 0) return null;
+  const allLines = groupLayoutItemsIntoLines(layoutItems)
+    .filter(l => l.text.length >= 1 && l.text.length <= 70)
+    .sort((a,b)=> a.yTop - b.yTop);
+  if(allLines.length === 0) return null;
+  const pageHeight = allLines[0].pageHeight || Math.max(...allLines.map(l=>l.pageHeight||0));
+  const topZone = pageHeight ? allLines.filter(l => l.yTop <= pageHeight*0.35) : [];
+  const pool = topZone.length > 0 ? topZone : allLines.slice(0, 6);
+  // Reject lines that are mostly digits/punctuation (invoice #s, tax IDs, dates, totals).
+  const isMostlyText = l => {
+    const letters = (l.text.match(/[A-Za-zก-๛]/g) || []).length;
+    return letters >= Math.max(2, Math.floor(l.text.length*0.4));
+  };
+  const candidates = pool.filter(isMostlyText);
+  if(candidates.length === 0) return null;
+  candidates.sort((a,b)=> b.fontHeight - a.fontHeight || a.yTop - b.yTop);
+  const seed = candidates[0];
+  const seedIdx = allLines.indexOf(seed);
+  // A business name often wraps across two (or more) lines, especially on a
+  // narrow page — a receipt-width document is exactly where this happens
+  // most. Grow outward from the seed line to its immediate neighbors as long
+  // as they're a similarly large font and sit tight against it (small gap =
+  // same title continuing; a bigger gap or a much smaller font = a different,
+  // unrelated line like an address or a receipt number).
+  const closeEnough = (a,b) => {
+    const sizeOk = Math.min(a.fontHeight,b.fontHeight) >= 0.7*Math.max(a.fontHeight,b.fontHeight);
+    const gap = b.yTop - (a.yTop + a.fontHeight);
+    const gapOk = gap <= 0.6*Math.max(a.fontHeight,b.fontHeight);
+    return sizeOk && gapOk;
+  };
+  let startIdx = seedIdx, endIdx = seedIdx;
+  while(startIdx > 0 && closeEnough(allLines[startIdx-1], allLines[startIdx])) startIdx--;
+  while(endIdx < allLines.length-1 && closeEnough(allLines[endIdx], allLines[endIdx+1])) endIdx++;
+  const merged = allLines.slice(startIdx, endIdx+1).map(l=>l.text).join(' ').replace(/\s+/g,' ').trim();
+  const cleaned = cleanCompanyName(normalizeThaiOcrText(merged));
+  // Same plausibility gate as the formal-pattern matches above — the
+  // "biggest text near the top of the page" heuristic has no way to know
+  // whether that text is a real business name or just the largest blob of
+  // OCR noise on a badly scanned page; if it doesn't look like an actual
+  // name, leave the field blank (and editable) instead of guessing wrong
+  // with false confidence.
+  if(!isPlausibleCompanyName(cleaned)) return null;
+  return {name: cleaned, guessed: true};
+}
+// Same idea as the pdf.js layout above, but from a Tesseract recognize()
+// result (called with {blocks:true}, which populates data.lines: a flat
+// array of {text, bbox:{x0,y0,x1,y1}}, in image pixel coordinates for
+// whichever canvas — cropped or full-page — was actually OCR'd).
+function extractOcrLayoutLines(data, imageHeight){
+  const lines = (data && data.lines) || [];
+  return lines
+    .filter(l => l.text && l.bbox)
+    .map(l => ({
+      str: l.text.replace(/\s+/g,' ').trim(),
+      fontHeight: Math.max(1, l.bbox.y1 - l.bbox.y0),
+      xLeft: l.bbox.x0,
+      yTop: l.bbox.y0,
+      pageHeight: imageHeight
+    }))
+    .filter(l => l.str.length > 0);
+}
+function slugify(s){
+  return s.normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,40);
+}
+/* ---------------- Page-group (document) detection ---------------- */
+// Detects "หน้าที่ 1 จาก 2" / "หน้า 1/2" / "Page 1 of 2" style markers so
+// multi-page documents stay together instead of being split page-by-page.
+function parsePageMarker(text){
+  let m = text.match(/หน้าที่\s*[:\-]?\s*(\d{1,3})\s*(?:\/|จาก)\s*(\d{1,3})/);
+  if(m) return {cur:+m[1], total:+m[2]};
+  m = text.match(/หน้า\s*[:\-]?\s*(\d{1,3})\s*\/\s*(\d{1,3})/);
+  if(m) return {cur:+m[1], total:+m[2]};
+  m = text.match(/Page\s*[:\-]?\s*(\d{1,3})\s*(?:of|\/)\s*(\d{1,3})/i);
+  if(m) return {cur:+m[1], total:+m[2]};
+  return null;
+}
+function groupPagesIntoDocuments(pageTexts){
+  const groups = [];
+  let i = 0;
+  while(i < pageTexts.length){
+    const marker = parsePageMarker(pageTexts[i]);
+    let end = i;
+    if(marker && marker.total > 1 && marker.cur === 1){
+      let expected = 2;
+      let j = i+1;
+      while(j < pageTexts.length){
+        const m2 = parsePageMarker(pageTexts[j]);
+        if(m2 && m2.total === marker.total && m2.cur === expected){
+          end = j; expected++; j++;
+        } else break;
+      }
+    }
+    groups.push({pageStart:i, pageEnd:end});
+    i = end + 1;
+  }
+  return groups;
+}
+/* ---------------- App state ---------------- */
+let files = []; // {id, file, name, status, pageTexts, pageCount, error}
+let documents = []; // {id, fileId, fileName, pageStart, pageEnd, dateInfo, companyInfo, ocr}
+let counter = 0;
+let docCounter = 0;
+const pdfLibCache = new Map();
+const pdfJsDocCache = new Map(); // fileId -> loaded pdf.js document (for OCR rendering)
+const ocrResults = new Map(); // "fileId:pageStart" -> recognized OCR text ('' = attempted, nothing usable)
+const ocrLayouts = new Map(); // "fileId:pageStart" -> OCR line positions/sizes, for guessCompanyFromLayout
+let ocrWorkerPromise = null;
+let ocrRunning = false;
+let mergedBlob = null; // pre-built merged PDF, ready once all processing finishes
+let mergedBlobVersion = -1; // documentsVersion the cached mergedBlob was built from
+let mergedBlobOrderVersion = -1; // outputOrderVersion the cached mergedBlob was built from
+let documentsVersion = 0; // bumped every time rebuildDocuments() runs
+// Manual override of the sorted-list order (for when auto-sort-by-date gets
+// a document wrong — e.g. a landscape utility bill with no readable date).
+// null = follow automatic date order. Once the user moves any row this
+// becomes an explicit array of document keys in the order they should
+// appear; finalOrderedDocuments() below keeps it in sync with whatever
+// documents currently exist (new ones appended, removed ones dropped).
+let manualOrderKeys = null;
+// Keys of documents excluded from every export (merged PDF, ZIP, CSV, PDF
+// list) while staying visible — grayed out — in the on-screen table. For
+// pages photographed twice where the extra copy is just a reference shot,
+// not a real separate document.
+const excludedDocKeys = new Set();
+// Bumped whenever manual order or the excluded set changes. Reordering and
+// excluding don't call rebuildDocuments() (nothing about the OCR'd data
+// itself changed), so they don't bump documentsVersion — this is the
+// separate counter the merged-PDF cache check needs so it doesn't keep
+// serving a stale PDF built under the old order/inclusion set.
+let outputOrderVersion = 0;
+// Progress tracking across text extraction + OCR fallback
+let progress = { textTotal: 0, textDone: 0, ocrTotal: 0, ocrDone: 0 };
+// Turns Tesseract's internal status events into a short Thai message so the
+// "OCR" note keeps changing throughout a whole recognize() call — including a
+// live percentage during the recognition step itself — instead of sitting on
+// one static line for however many seconds that step takes. That's the part
+// most likely to look "frozen" without this.
+function ocrStatusMessage(m){
+  if(m.status === 'recognizing text'){
+    return `กำลังอ่านข้อความในภาพ... ${Math.round((m.progress||0)*100)}%`;
+  }
+  const map = {
+    'loading tesseract core': 'กำลังโหลดเครื่องมือ OCR... (ครั้งแรกอาจใช้เวลาสักครู่)',
+    'initializing tesseract': 'กำลังเตรียมเครื่องมือ OCR...',
+    'loading language traineddata': 'กำลังโหลดข้อมูลภาษาสำหรับ OCR...',
+    'initializing api': 'กำลังเตรียม OCR ให้พร้อมใช้งาน...'
+  };
+  return map[m.status] || null;
+}
+function ocrLogger(m){
+  const ocrNote = document.getElementById('ocrNote');
+  const msg = ocrStatusMessage(m);
+  if(ocrNote && msg){
+    ocrNote.style.display = 'block';
+    ocrNote.textContent = msg;
+  }
+}
+async function getOcrWorker(){
+  if(!ocrWorkerPromise){
+    ocrWorkerPromise = Tesseract.createWorker('tha+eng', undefined, { logger: ocrLogger });
+  }
+  return ocrWorkerPromise;
+}
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const queueEl = document.getElementById('queue');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+const timelineTrack = document.getElementById('timelineTrack');
+const timelineEmpty = document.getElementById('timelineEmpty');
+const resultsBody = document.getElementById('resultsBody');
+// ---- Inline editing for the results table ----
+// OCR — even the best available — is never going to be perfect on a badly
+// scanned document; the plausibility warnings (⚠️) above flag likely
+// mistakes, but the actual fix has to be a human decision. This lets the
+// user correct the date or company for any row directly in the table
+// instead of needing to re-scan or edit the source PDF, and remembers the
+// correction (keyed by file+page, not the row's on-screen position, which
+// shifts as the table re-sorts) across every subsequent re-render.
+function findDocByKey(key){
+  return documents.find(d => overrideKey(d.fileId, d.pageStart) === key);
+}
+function parseManualDate(raw){
+  const m = raw.trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(!m) return null;
+  const day = +m[1], month = +m[2], year = normalizeYear(+m[3]);
+  if(month<1||month>12||day<1||day>31) return null;
+  return {year, month, day, sortKey: year*10000+month*100+day, display: `${pad2(day)}/${pad2(month)}/${year}`, score: 0};
+}
+// Describes how the inline editor behaves for each editable field: where to
+// read its current value/candidates from, how to render one as text, how to
+// turn a candidate/manual entry into the field's stored shape, and the
+// placeholder shown for free typing. Adding a new editable field (as this
+// was extended to do for amount/VAT after starting with just date/company)
+// is then just one more entry here, rather than another branch everywhere.
+const FIELD_CONFIG = {
+  date: {
+    infoKey: 'dateInfo', candidatesKey: 'dateCandidates',
+    display: info => info.display,
+    fromCandidate: c => c,
+    fromCustom: raw => parseManualDate(raw),
+    invalidMsg: 'รูปแบบวันที่ไม่ถูกต้อง กรุณาใช้ วว/ดด/ปปปป เช่น 20/05/2026',
+    placeholder: 'วว/ดด/ปปปป เช่น 20/05/2026',
+  },
+  company: {
+    infoKey: 'companyInfo', candidatesKey: 'companyCandidates',
+    display: info => info.name,
+    fromCandidate: c => ({name: c.name, guessed: !!c.guessed, buyerContext: !!c.buyerContext}),
+    fromCustom: raw => raw.trim() ? {name: raw.trim(), guessed:false, buyerContext:false} : null,
+    invalidMsg: 'กรุณาพิมพ์ชื่อบริษัท',
+    placeholder: 'พิมพ์ชื่อบริษัท',
+  },
+  amount: {
+    infoKey: 'amountInfo', candidatesKey: 'amountCandidates',
+    display: info => info.display,
+    fromCandidate: c => ({value: c.value, display: c.display}),
+    fromCustom: raw => parseManualAmount(raw),
+    invalidMsg: 'กรุณาใส่ตัวเลขมูลค่าสินค้า/บริการ เช่น 1500 หรือ 1,500.00',
+    placeholder: 'เช่น 1,500.00',
+  },
+  vat: {
+    infoKey: 'vatInfo', candidatesKey: 'vatCandidates',
+    display: info => info.display,
+    fromCandidate: c => ({value: c.value, display: c.display}),
+    fromCustom: raw => parseManualAmount(raw),
+    invalidMsg: 'กรุณาใส่ตัวเลขภาษีมูลค่าเพิ่ม เช่น 105 หรือ 105.00',
+    placeholder: 'เช่น 105.00',
+  },
+};
+function applyOverride(key, field, value){
+  const existing = userOverrides.get(key) || {};
+  existing[field] = value;
+  userOverrides.set(key, existing);
+  activeEditor = null;
+  rebuildDocuments();
+  renderResults();
+}
+// Company names the user has typed in manually, persisted in this browser
+// across sessions (localStorage — the tool runs entirely client-side, so
+// this is the only "remember for next time" it has) so they show up as
+// ready-made options the next time OCR can't read a name it's seen before.
+const SAVED_COMPANY_NAMES_KEY = 'docTimelineSavedCompanyNames';
+const MAX_SAVED_COMPANY_NAMES = 40;
+function loadSavedCompanyNames(){
+  try{
+    const raw = localStorage.getItem(SAVED_COMPANY_NAMES_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter(s=>typeof s==='string' && s.trim()) : [];
+  }catch(err){
+    return []; // localStorage unavailable/corrupt — degrade silently, not critical
+  }
+}
+function rememberCompanyName(name){
+  const trimmed = (name||'').trim();
+  if(!trimmed) return;
+  try{
+    let list = loadSavedCompanyNames().filter(n=>n!==trimmed);
+    list.unshift(trimmed); // most-recently-used first
+    if(list.length > MAX_SAVED_COMPANY_NAMES) list = list.slice(0, MAX_SAVED_COMPANY_NAMES);
+    localStorage.setItem(SAVED_COMPANY_NAMES_KEY, JSON.stringify(list));
+  }catch(err){
+    // storage full/unavailable — not critical, the correction still applies to this document
+  }
+}
+function openCellEditor(key, field){
+  const doc = findDocByKey(key);
+  const cfg = FIELD_CONFIG[field];
+  if(!doc || !cfg) return;
+  // Only one cell editor is open at a time. If a different cell's editor is
+  // currently open, release it (this is what lets renderResults() paint
+  // again — see the guard at the top of that function) so it returns to
+  // normal display before we build the new one, then re-find this button's
+  // <td> in the freshly-rendered DOM (the old reference from before the
+  // re-render would otherwise be a detached, no-longer-visible node).
+  if(activeEditor && (activeEditor.key !== key || activeEditor.field !== field)){
+    activeEditor = null;
+    renderResults();
+  }
+  activeEditor = {key, field};
+  const td = resultsBody.querySelector(`.editable-cell[data-key="${escapeCssAttrValue(key)}"][data-field="${field}"]`);
+  if(!td){ activeEditor = null; return; }
+  const candidates = doc[cfg.candidatesKey] || [];
+  const currentInfo = doc[cfg.infoKey];
+  const currentDisplay = currentInfo ? cfg.display(currentInfo) : '';
+  const optionValues = [];
+  if(currentDisplay) optionValues.push(currentDisplay);
+  candidates.forEach(c=>{
+    const val = cfg.display(c);
+    if(!optionValues.includes(val)) optionValues.push(val);
+  });
+  let savedNamesHtml = '';
+  if(field === 'company'){
+    const saved = loadSavedCompanyNames().filter(n => !optionValues.includes(n));
+    if(saved.length > 0){
+      savedNamesHtml = `<optgroup label="เคยพิมพ์ไว้ก่อนหน้า">${saved.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}</optgroup>`;
+    }
+  }
+  const optionsHtml = optionValues.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('')
+    + savedNamesHtml
+    + `<option value="__clear__">— ไม่ระบุ —</option>`
+    + `<option value="__custom__">อื่นๆ (พิมพ์เอง)</option>`;
+  td.innerHTML = `<div class="edit-picker">
+    <select class="edit-select">${optionsHtml}</select>
+    <input type="text" class="edit-custom" style="display:none" placeholder="${escapeHtml(cfg.placeholder)}" />
+    <div class="edit-actions">
+      <button type="button" class="save">บันทึก</button>
+      <button type="button" class="cancel">ยกเลิก</button>
+    </div>
+  </div>`;
+  const select = td.querySelector('.edit-select');
+  const customInput = td.querySelector('.edit-custom');
+  select.addEventListener('change', ()=>{
+    customInput.style.display = select.value === '__custom__' ? 'block' : 'none';
+    if(select.value === '__custom__') customInput.focus();
+  });
+  td.querySelector('.cancel').addEventListener('click', ()=>{ activeEditor = null; renderResults(); });
+  td.querySelector('.save').addEventListener('click', ()=>{
+    let newValue;
+    if(select.value === '__clear__'){
+      newValue = null;
+    }else if(select.value === '__custom__'){
+      const raw = customInput.value.trim();
+      if(!raw) return; // nothing typed — leave the editor open rather than silently discarding
+      const parsed = cfg.fromCustom(raw);
+      if(!parsed){ alert(cfg.invalidMsg); return; }
+      newValue = parsed;
+      if(field === 'company') rememberCompanyName(raw);
+    }else{
+      const match = candidates.find(c => cfg.display(c) === select.value);
+      if(match){
+        newValue = cfg.fromCandidate(match);
+      }else if(currentInfo && cfg.display(currentInfo) === select.value){
+        newValue = currentInfo;
+      }else{
+        newValue = cfg.fromCustom(select.value) || cfg.fromCandidate({name: select.value, display: select.value});
+      }
+    }
+    applyOverride(key, field, newValue);
+  });
+}
+resultsBody.addEventListener('click', (e)=>{
+  const editBtn = e.target.closest('.edit-btn');
+  if(editBtn){ openCellEditor(editBtn.dataset.key, editBtn.dataset.field); return; }
+  const moveBtn = e.target.closest('.move-btn');
+  if(moveBtn && !moveBtn.disabled){ moveDocumentInOrder(moveBtn.dataset.key, +moveBtn.dataset.dir); return; }
+});
+resultsBody.addEventListener('change', (e)=>{
+  const chk = e.target.closest('.include-toggle');
+  if(!chk) return;
+  toggleDocExcluded(chk.dataset.key, !chk.checked);
+});
+const downloadMergedBtn = document.getElementById('downloadMerged');
+const downloadZipBtn = document.getElementById('downloadZip');
+const downloadCsvBtn = document.getElementById('downloadCsv');
+const downloadListPdfBtn = document.getElementById('downloadListPdf');
+const resetOrderBtn = document.getElementById('resetOrder');
+resetOrderBtn.addEventListener('click', ()=>resetManualOrder());
+const missingNote = document.getElementById('missingNote');
+dropzone.addEventListener('click', ()=>fileInput.click());
+dropzone.addEventListener('dragover', e=>{e.preventDefault(); dropzone.classList.add('drag');});
+dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e=>{
+  e.preventDefault(); dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e=>{
+  handleFiles(e.target.files);
+  fileInput.value = '';
+});
+function handleFiles(fileList){
+  const pdfFiles = Array.from(fileList).filter(f=>f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(pdfFiles.length===0) return;
+  mergedBlob = null;
+  mergedBlobVersion = -1;
+  mergedBlobOrderVersion = -1;
+  downloadMergedBtn.textContent = 'ดาวน์โหลด PDF รวม (เรียงแล้ว)';
+  // Show activity the instant files are dropped — before we even know page
+  // counts — so there's never a stretch with no visible sign anything is
+  // happening (that gap is exactly what reads as "is this frozen?").
+  progressWrap.style.display = 'flex';
+  progressFill.style.width = '4%';
+  progressLabel.textContent = 'กำลังเริ่มต้น...';
+  pdfFiles.forEach(file=>{
+    const item = {id: counter++, file, name: file.name, status:'pending'};
+    files.push(item);
+    processFile(item);
+  });
+  renderQueue();
+}
+function renderProgress(){
+  const total = progress.textTotal + progress.ocrTotal;
+  const done = progress.textDone + progress.ocrDone;
+  // total===0 means we haven't learned any page counts yet — keep whatever
+  // "starting" state handleFiles() already showed instead of hiding the bar,
+  // so the indicator never disappears right when it's most needed.
+  if(total===0){ return; }
+  const pct = Math.min(100, Math.round((done/total)*100));
+  progressWrap.style.display = 'flex';
+  progressFill.style.width = Math.max(pct, 4) + '%';
+  progressLabel.textContent = `${done}/${total} หน้า`;
+  if(pct>=100 && !ocrRunning && files.every(f=>f.status==='done'||f.status==='error')){
+    progressLabel.textContent = `เสร็จสิ้น (${total} หน้า)`;
+    setTimeout(()=>{ if(progress.textDone+progress.ocrDone>=progress.textTotal+progress.ocrTotal) progressWrap.style.display='none'; }, 1800);
+  }
+}
+async function processFile(item){
+  item.status = 'processing';
+  renderQueue();
+  try{
+    const buf = await item.file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({data: buf}).promise;
+    const total = doc.numPages;
+    progress.textTotal += total;
+    renderProgress();
+    const pageTexts = [];
+    const pageLayouts = [];
+    for(let p=1; p<=total; p++){
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      pageTexts.push(content.items.map(it=>it.str).join(' '));
+      // Keep position/size per text item too (page size in points, independent
+      // of any render scale) — used only as a fallback to guess the company
+      // name from layout when no regex pattern matches (see guessCompanyFromLayout).
+      const pageHeight = page.view ? (page.view[3]-page.view[1]) : 0;
+      pageLayouts.push(content.items.map(it => ({
+        str: it.str,
+        fontHeight: Math.hypot(it.transform[2], it.transform[3]) || Math.abs(it.transform[3]) || 0,
+        xLeft: it.transform[4],
+        yTop: pageHeight - it.transform[5],
+        pageHeight
+      })));
+      progress.textDone += 1;
+      renderProgress();
+    }
+    item.pageTexts = pageTexts;
+    item.pageLayouts = pageLayouts;
+    item.pageCount = total;
+    item.status = 'done';
+    pdfJsDocCache.set(item.id, doc); // keep for OCR rendering fallback
+  }catch(err){
+    item.status = 'error';
+    item.error = err && err.message ? err.message : 'อ่านไฟล์ไม่สำเร็จ';
+  }
+  renderQueue();
+  rebuildDocuments();
+  renderResults();
+  scheduleOcrFallback();
+}
+// User corrections made in the results table, keyed by "fileId:pageStart"
+// (stable across rebuilds — the {id} field on a document object is NOT
+// stable, since rebuildDocuments() reassigns it via docCounter every time
+// it reruns). Holds {date: {...dateInfo}} and/or {company: {...companyInfo}}.
+const userOverrides = new Map();
+function overrideKey(fileId, pageStart){ return `${fileId}:${pageStart}`; }
+// Which cell's inline editor is currently open, as {key, field}, or null.
+// renderResults() runs constantly in the background (every time an async
+// OCR fallback pass finishes on ANY page, it rebuilds+re-renders the WHOLE
+// table) — without this guard, a background OCR pass finishing while the
+// user is mid-edit on some other row wipes out resultsBody.innerHTML,
+// silently destroying the open <select>/input the user was just about to
+// use. That looked like "some documents can't be edited": the row IS
+// editable, but the click-to-edit UI kept getting yanked out from under the
+// user before they could pick a value or press save.
+let activeEditor = null;
+function escapeCssAttrValue(s){ return String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"'); }
+// Recomputes the document list from scratch: text-layer extraction first,
+// falling back to whatever OCR text has been cached (see scheduleOcrFallback)
+// for either the date or the company name, independently.
+function rebuildDocuments(){
+  documents = [];
+  documentsVersion++;
+  files.forEach(item=>{
+    if(item.status !== 'done') return;
+    const groups = groupPagesIntoDocuments(item.pageTexts);
+    groups.forEach(g=>{
+      const textLayer = item.pageTexts.slice(g.pageStart, g.pageEnd+1).join('\n');
+      const ocrKey = `${item.id}:${g.pageStart}`;
+      const ocrText = ocrResults.get(ocrKey);
+      let dateInfo = bestDate(textLayer);
+      let companyInfo = bestCompany(textLayer);
+      if(ocrText){
+        if(!dateInfo) dateInfo = bestDate(ocrText);
+        if(!companyInfo) companyInfo = bestCompany(ocrText);
+      }
+      if(!companyInfo){
+        // No formal pattern matched anywhere — fall back to "biggest text near
+        // the top of the first page", which works regardless of page size or
+        // orientation. Prefer the digital text layer's layout when there is
+        // one; only look at OCR's layout (word positions) for pages that were
+        // actually scanned (no text layer at all).
+        const layout = (item.pageLayouts && item.pageLayouts[g.pageStart] && item.pageLayouts[g.pageStart].length > 0)
+          ? item.pageLayouts[g.pageStart]
+          : ocrLayouts.get(ocrKey);
+        companyInfo = guessCompanyFromLayout(layout);
+      }
+      // A short list of alternates for the results-table editor: whichever
+      // text sources are available (text layer + OCR, combined), so a
+      // digit-misread date or a wrongly-picked company still has its
+      // correct reading one click away instead of requiring a full retype.
+      const combinedSource = textLayer + (ocrText ? '\n' + ocrText : '');
+      const dateCandidates = topDateCandidates(combinedSource, 4);
+      const companyCandidates = topCompanyCandidates(combinedSource, 4);
+      // Amount/VAT are manual-entry-only — no automatic detection. Company
+      // name and date are what this tool auto-reads; a mount/VAT are just a
+      // fillable field in the results table (see FIELD_CONFIG/the inline
+      // editor below), populated only by whatever the user types in.
+      const amountInfo = null;
+      const vatInfo = null;
+      const amountCandidates = [];
+      const vatCandidates = [];
+      const oKey = overrideKey(item.id, g.pageStart);
+      const override = userOverrides.get(oKey);
+      const finalCompanyInfo = (override && override.company !== undefined) ? override.company : companyInfo;
+      const companyIsOverridden = !!(override && override.company !== undefined);
+      documents.push({
+        id: docCounter++,
+        fileId: item.id,
+        fileName: item.name,
+        pageStart: g.pageStart,
+        pageEnd: g.pageEnd,
+        dateInfo: (override && override.date !== undefined) ? override.date : dateInfo,
+        companyInfo: finalCompanyInfo,
+        amountInfo: (override && override.amount !== undefined) ? override.amount : amountInfo,
+        vatInfo: (override && override.vat !== undefined) ? override.vat : vatInfo,
+        dateOverridden: !!(override && override.date !== undefined),
+        companyOverridden: companyIsOverridden,
+        amountOverridden: !!(override && override.amount !== undefined),
+        vatOverridden: !!(override && override.vat !== undefined),
+        // Only the picked candidate itself carries buyerContext (see
+        // makeCompanyCandidate) — surfaced here so the table can warn "this
+        // might be the customer's name, not the seller's" rather than
+        // silently showing a name that's plausible but likely wrong. A
+        // manual override is the user's own informed choice, so it's never
+        // flagged even if it happens to be a buyer-context match.
+        companySuspicious: !companyIsOverridden && !!(finalCompanyInfo && finalCompanyInfo.buyerContext),
+        dateCandidates,
+        companyCandidates,
+        amountCandidates,
+        vatCandidates,
+        ocr: ocrResults.has(ocrKey)
+      });
+    });
+  });
+  flagImplausibleDates();
+}
+// Cross-checks each document's date against the rest of the batch: a receipt
+// pile or a folder of scanned documents usually clusters within a year or
+// two of each other, so a date that lands far outside that cluster is more
+// likely an OCR digit misread (e.g. "2026" read as "2006") than a genuinely
+// distant document. This never changes the picked date automatically — it
+// only flags it (dateSuspicious) so the results table can show a warning
+// and let the user fix it from the alternates list if it's really wrong.
+// Needs at least 3 dated documents for "the rest of the batch" to mean
+// anything; a 1-2 document batch never gets flagged.
+function flagImplausibleDates(){
+  const datedDocs = documents.filter(d=>d.dateInfo);
+  documents.forEach(d=>{ d.dateSuspicious = false; });
+  if(datedDocs.length < 3) return;
+  const yearCounts = new Map();
+  datedDocs.forEach(d=>{
+    const y = d.dateInfo.year;
+    yearCounts.set(y, (yearCounts.get(y)||0)+1);
+  });
+  const years = datedDocs.map(d=>d.dateInfo.year).sort((a,b)=>a-b);
+  const medianYear = years[Math.floor(years.length/2)];
+  datedDocs.forEach(d=>{
+    d.dateSuspicious = Math.abs(d.dateInfo.year - medianYear) > 2;
+  });
+}
+// ---- Image preprocessing for OCR (grayscale + contrast stretch + deskew) ----
+// Real scanned receipts are often faint/low-contrast (a worn printer ribbon,
+// a photocopy of a photocopy) or slightly crooked (a hand-fed scanner page
+// rarely sits perfectly straight). Tesseract's LSTM engine tolerates some of
+// this on its own, but a genuinely faint or off-angle scan measurably loses
+// accuracy — this preprocessing pass narrows that gap before OCR ever sees
+// the image. Important: this only ever touches the OCR copy of the page —
+// renderPageRegion() is used exclusively for OCR input (see callers below);
+// the actual merged/sorted PDF output copies the original page bytes
+// untouched via PDFLib, so this can't degrade what the user downloads.
+function grayscaleAndContrastStretch(canvas){
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  if(w<=0 || h<=0) return;
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const n = w*h;
+  const gray = new Uint8ClampedArray(n);
+  const hist = new Uint32Array(256);
+  for(let i=0, p=0; i<n; i++, p+=4){
+    const g = (0.299*data[p] + 0.587*data[p+1] + 0.114*data[p+2]) | 0;
+    gray[i] = g;
+    hist[g]++;
+  }
+  // Percentile-based contrast stretch: clip the darkest/lightest ~0.5% of
+  // pixels as outliers (scan noise, a punch hole, a glare spot), then
+  // stretch what's left to fill the full 0-255 range. Gentler than a hard
+  // min/max stretch, which a single stray artifact can throw off badly.
+  const clipCount = Math.max(1, Math.floor(n*0.005));
+  let lo = 0, acc = 0;
+  for(; lo<255; lo++){ acc += hist[lo]; if(acc>=clipCount) break; }
+  let hi = 255; acc = 0;
+  for(; hi>0; hi--){ acc += hist[hi]; if(acc>=clipCount) break; }
+  if(hi <= lo){ lo = 0; hi = 255; } // degenerate (near-blank) page — skip the stretch
+  const range = hi - lo;
+  for(let i=0, p=0; i<n; i++, p+=4){
+    let v = range > 0 ? Math.round((gray[i] - lo) * 255 / range) : gray[i];
+    if(v<0) v=0; else if(v>255) v=255;
+    data[p] = data[p+1] = data[p+2] = v;
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+// Estimates rotation via horizontal projection-profile variance: a
+// well-aligned page has sharp bright/dark row transitions (text lines vs.
+// the gaps between them); a skewed page blurs adjacent rows together,
+// lowering that variance. Runs on a small downsampled copy for speed —
+// precision to the nearest 0.5° is plenty for what this corrects.
+function estimateSkewAngle(canvas){
+  const targetW = 500;
+  if(canvas.width<=0 || canvas.height<=0) return 0;
+  const scaleDown = targetW / canvas.width;
+  const w = targetW, h = Math.max(1, Math.round(canvas.height * scaleDown));
+  const small = document.createElement('canvas');
+  small.width = w; small.height = h;
+  const sctx = small.getContext('2d');
+  sctx.drawImage(canvas, 0, 0, w, h);
+  const data = sctx.getImageData(0, 0, w, h).data;
+  const gray = new Float32Array(w*h);
+  for(let i=0, p=0; i<w*h; i++, p+=4){
+    gray[i] = 255 - (0.299*data[p]+0.587*data[p+1]+0.114*data[p+2]); // invert: ink = high value
+  }
+  const cx = w/2, cy = h/2;
+  function profileVariance(angleDeg){
+    const rad = angleDeg * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const rowSums = new Float64Array(h);
+    const stepX = 2;
+    for(let y=0; y<h; y++){
+      let sum = 0, count = 0;
+      const dy = y-cy;
+      for(let x=0; x<w; x+=stepX){
+        const dx = x-cx;
+        const sx = Math.round(cx + dx*cos - dy*sin);
+        const sy = Math.round(cy + dx*sin + dy*cos);
+        if(sx>=0 && sx<w && sy>=0 && sy<h){ sum += gray[sy*w+sx]; count++; }
+      }
+      rowSums[y] = count>0 ? sum/count : 0;
+    }
+    const mean = rowSums.reduce((a,b)=>a+b,0)/h;
+    let variance = 0;
+    for(let y=0;y<h;y++){ const d=rowSums[y]-mean; variance += d*d; }
+    return variance/h;
+  }
+  let bestAngle = 0, bestVar = profileVariance(0);
+  for(let a=-5; a<=5; a+=0.5){
+    if(a===0) continue;
+    const v = profileVariance(a);
+    if(v > bestVar){ bestVar = v; bestAngle = a; }
+  }
+  return bestAngle;
+}
+function rotateCanvasInPlace(canvas, angleDeg){
+  const rad = angleDeg * Math.PI / 180;
+  const w = canvas.width, h = canvas.height;
+  const rotated = document.createElement('canvas');
+  rotated.width = w; rotated.height = h;
+  const ctx = rotated.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.translate(w/2, h/2);
+  ctx.rotate(rad);
+  ctx.drawImage(canvas, -w/2, -h/2);
+  return rotated;
+}
+// Renders a page to a canvas, optionally cropped to just the top portion.
+// heightFraction 1 = full page; 0.55 = top 55% only.
+// Caches the fully-rendered-and-preprocessed page canvas (the expensive
+// part: a 300 DPI pdf.js render plus grayscale/contrast-stretch/deskew) so
+// that when a page needs BOTH a crop pass and a full-page pass, the second
+// call just slices from the already-prepared canvas instead of redoing that
+// whole pipeline a second time from scratch — pure speed, no accuracy
+// change (identical pixels either way).
+const preparedPageCanvasCache = new Map(); // "fileId:pageNum" -> prepared canvas
+async function getPreparedPageCanvas(fileId, pageNum){
+  const key = `${fileId}:${pageNum}`;
+  if(preparedPageCanvasCache.has(key)) return preparedPageCanvasCache.get(key);
+  const pdfDoc = pdfJsDocCache.get(fileId);
+  if(!pdfDoc) return null;
+  const page = await pdfDoc.getPage(pageNum);
+  // pdf.js viewport scale 1 = 72 DPI (1 PDF point = 1/72in), so scale
+  // 300/72 renders at true 300 DPI — the resolution real scan/receipt
+  // hardware typically embeds at, and well above what small
+  // receipt-printer-font characters need to stay legible after OCR
+  // downsampling. Rendering below the source scan's native DPI (the old
+  // flat scale of 3 ≈ 216 DPI) throws away real detail the scanner already
+  // captured, which was found to measurably hurt OCR accuracy on real
+  // Thai retail receipts. An unusually large or long page (a continuous
+  // receipt-roll export, a poster-sized sheet, ...) rendered at a flat
+  // 300 DPI can still produce a canvas that's slow to render/OCR or, in
+  // the extreme, bumps into browser canvas size limits, so the scale is
+  // still clamped to a sane pixel budget regardless of physical page size.
+  const baseViewport = page.getViewport({scale: 1});
+  const MAX_DIMENSION = 5000;
+  const MAX_AREA = 16_000_000;
+  let scale = 300 / 72;
+  scale = Math.min(scale, MAX_DIMENSION / Math.max(baseViewport.width, baseViewport.height, 1));
+  scale = Math.min(scale, Math.sqrt(MAX_AREA / Math.max(baseViewport.width * baseViewport.height, 1)));
+  scale = Math.max(scale, 1); // never upscale below 1x just to fit the budget
+  const viewport = page.getViewport({scale});
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+  // Preprocess for OCR before any cropping, so a deskew correction still
+  // lines the page up straight for the top-of-page crop that follows.
+  let prepared = canvas;
+  try{
+    grayscaleAndContrastStretch(prepared);
+    const skew = estimateSkewAngle(prepared);
+    // Only bother rotating for an actually-detectable skew — anything this
+    // small isn't worth the resample, and is as likely to be measurement
+    // noise as a real crooked scan.
+    if(Math.abs(skew) >= 0.5){
+      prepared = rotateCanvasInPlace(prepared, -skew);
+    }
+  }catch(err){
+    // Preprocessing is a best-effort accuracy boost, never a requirement —
+    // if anything above throws (an unusual canvas size, a browser quirk),
+    // fall back to the untouched render rather than losing the page.
+    prepared = canvas;
+  }
+  preparedPageCanvasCache.set(key, prepared);
+  return prepared;
+}
+async function renderPageRegion(fileId, pageNum, heightFraction){
+  const prepared = await getPreparedPageCanvas(fileId, pageNum);
+  if(!prepared) return null;
+  if(heightFraction >= 1) return prepared;
+  const cropHeight = Math.max(1, Math.floor(prepared.height * heightFraction));
+  const cropped = document.createElement('canvas');
+  cropped.width = prepared.width;
+  cropped.height = cropHeight;
+  cropped.getContext('2d').drawImage(prepared, 0, 0, prepared.width, cropHeight, 0, 0, prepared.width, cropHeight);
+  return cropped;
+}
+// Whether it's worth trying a cropped top-of-page OCR pass before OCRing the
+// whole page. The crop assumes the header/company-name/date sit near the top
+// of a roughly upright page — a reasonable bet for a normal portrait
+// document, but not for a landscape page (the header can run across the
+// full width instead) or a page that's far from a normal proportion (a long
+// receipt-roll export, a half-sheet ticket, ...). For those, skip straight
+// to a full-page OCR rather than risk a first pass that structurally can't
+// find the header at all.
+function shouldTryTopCropFirst(page){
+  const v = page.getViewport({scale: 1});
+  const w = v.width, h = v.height;
+  if(w <= 0 || h <= 0) return true;
+  const ratio = h / w;
+  return ratio >= 1.15; // clearly taller than wide — portrait-like
+}
+// Runs after each file finishes text extraction: any document that's still
+// missing a date OR a company name (typically a scanned page with no text
+// layer) gets OCR'd. First pass checks just the top ~55% of the page (fast,
+// avoids stray numbers/text further down, and is where a letterhead/company
+// name and an issue date usually sit); if either field is still missing after
+// that, a second pass OCRs the full page. Results are cached (as raw
+// recognized text, re-parsed by rebuildDocuments) so re-running
+// rebuildDocuments() doesn't repeat the OCR work itself.
+// Runs one page's OCR attempt (crop pass, then full-page pass if still
+// needed). Thrown out to its own function so scheduleOcrFallback can retry
+// it cleanly on a transient failure instead of duplicating the try body.
+async function attemptPageOcr(target, ocrNote, remainingCount){
+  const worker = await getOcrWorker();
+  const pdfDoc = pdfJsDocCache.get(target.fileId);
+  const pdfPage = pdfDoc ? await pdfDoc.getPage(target.pageStart+1) : null;
+  let combinedText = '';
+  let lastLayout = null; // OCR layout (line positions/sizes) from the most complete pass, for the "guess from biggest text" fallback
+  // Landscape / unusually-proportioned pages: the top-crop heuristic
+  // assumes a portrait header, so skip straight to a full-page pass rather
+  // than waste a pass that's unlikely to find anything.
+  const tryCropFirst = pdfPage ? shouldTryTopCropFirst(pdfPage) : true;
+  if(tryCropFirst){
+    const crop = await renderPageRegion(target.fileId, target.pageStart+1, 0.55);
+    if(crop){
+      const { data } = await worker.recognize(crop, {}, {text: true, blocks: true});
+      combinedText += (data.text || '') + '\n';
+      lastLayout = extractOcrLayoutLines(data, crop.height);
+    }
+  }
+  const stillNeedDate = !target.dateInfo && !bestDate(combinedText);
+  const stillNeedCompany = !target.companyInfo && !bestCompany(combinedText) && !guessCompanyFromLayout(lastLayout);
+  // Deliberately NOT escalating to a full-page pass just because amount/VAT
+  // are still missing at this point. Date and company are the fields the
+  // user needs found automatically; amount/VAT are explicitly a
+  // best-effort extra — fine to leave blank and fill in by hand — so
+  // forcing a second, much slower full-page OCR pass on every scanned page
+  // (the totals block sits near the bottom, outside this crop) purely on
+  // their account isn't worth doubling processing time for. They still get
+  // picked up for free whenever a full-page pass happens anyway for
+  // date/company reasons below.
+  if(!tryCropFirst || stillNeedDate || stillNeedCompany){
+    // top-of-page crop didn't have everything (or wasn't attempted at all
+    // for a landscape/atypical page) — (re)try with the whole page
+    if(tryCropFirst && ocrNote) ocrNote.textContent = `หาข้อมูลไม่ครบในส่วนบนของหน้า ${target.pageStart+1} กำลังอ่านทั้งหน้าเพิ่มเติม...`;
+    const full = await renderPageRegion(target.fileId, target.pageStart+1, 1);
+    if(full){
+      const { data } = await worker.recognize(full, {}, {text: true, blocks: true});
+      combinedText += (data.text || '') + '\n';
+      lastLayout = extractOcrLayoutLines(data, full.height); // full page supersedes the crop's layout
+    }
+  }
+  return { combinedText, lastLayout };
+}
+async function scheduleOcrFallback(){
+  if(ocrRunning) return;
+  ocrRunning = true;
+  try{
+    const ocrNote = document.getElementById('ocrNote');
+    // Load the OCR engine (worker + WASM core + language data) once, up
+    // front, before touching the first page. Without this, the very first
+    // recognize() call has to wait out that whole load itself, on top of
+    // doing the actual recognition — the heaviest, slowest, most
+    // failure-prone moment in the whole pipeline — which is why an
+    // intermittent failure tended to land on the first document
+    // specifically. A failure here just means the retry loop below gets a
+    // fresh attempt at creating the worker too.
+    try{ await getOcrWorker(); }catch(err){ /* surfaced again on first real attempt below */ }
+    while(true){
+      const remainingTargets = documents.filter(d => (!d.dateInfo || !d.companyInfo) && !ocrResults.has(`${d.fileId}:${d.pageStart}`));
+      if(remainingTargets.length===0) break;
+      // Recompute total each pass so the bar reflects newly-discovered targets too
+      progress.ocrTotal = progress.ocrDone + remainingTargets.length;
+      renderProgress();
+      const target = remainingTargets[0];
+      const ocrKey = `${target.fileId}:${target.pageStart}`;
+      ocrNote.style.display = 'block';
+      ocrNote.textContent = `กำลังอ่านหน้าที่เป็นภาพสแกนด้วย OCR เพื่อหาวันที่/ชื่อบริษัท... (เหลืออีกประมาณ ${remainingTargets.length} หน้า)`;
+      // OCR is heavy client-side work, and a transient hiccup (a dropped
+      // WASM worker, a momentary out-of-memory under browser load, etc.) is
+      // realistic — without a retry, that one bad moment permanently caches
+      // an empty result for that page ("attempted, nothing found"), which
+      // is indistinguishable from a genuine OCR miss and never gets
+      // revisited. This is very likely what showed up as "sometimes it
+      // reads the value, sometimes it doesn't" on the same document across
+      // different runs. Retry the whole attempt (crop pass + full-page
+      // pass) up to 3 times with a short pause, and if a worker itself
+      // seems to have died mid-recognize, throw it away so the next
+      // attempt starts with a fresh one instead of retrying against the
+      // same broken worker.
+      const MAX_ATTEMPTS = 2;
+      let result = null;
+      let lastErr = null;
+      for(let attempt=1; attempt<=MAX_ATTEMPTS; attempt++){
+        try{
+          result = await attemptPageOcr(target, ocrNote, remainingTargets.length);
+          lastErr = null;
+          break;
+        }catch(err){
+          lastErr = err;
+          ocrWorkerPromise = null; // this worker may be in a bad state — force a fresh one on retry
+          if(attempt < MAX_ATTEMPTS){
+            ocrNote.textContent = `อ่านหน้า ${target.pageStart+1} ไม่สำเร็จ กำลังลองใหม่ (${attempt}/${MAX_ATTEMPTS})...`;
+            await new Promise(res=>setTimeout(res, 250));
+          }
+        }
+      }
+      if(result){
+        ocrResults.set(ocrKey, result.combinedText); // cache even if empty = "attempted, nothing found"
+        if(result.lastLayout && result.lastLayout.length > 0) ocrLayouts.set(ocrKey, result.lastLayout);
+      }else{
+        ocrResults.set(ocrKey, ''); // every retry failed — give up on this page, but don't block the rest of the batch
+      }
+      progress.ocrDone += 1;
+      rebuildDocuments();
+      renderResults();
+      renderProgress();
+    }
+    ocrNote.style.display = 'none';
+  }finally{
+    ocrRunning = false;
+    renderProgress();
+    maybeAutoBuildMerged();
+  }
+}
+// Once every file has finished text extraction and every document without a
+// text-based date/company has had its OCR attempt (found or not), pre-build
+// the merged, sorted PDF in the background so the download is instant.
+async function maybeAutoBuildMerged(){
+  const allFilesSettled = files.length>0 && files.every(f=>f.status==='done'||f.status==='error');
+  const allOcrSettled = documents.every(d=> (d.dateInfo && d.companyInfo) || ocrResults.has(`${d.fileId}:${d.pageStart}`));
+  if(!allFilesSettled || !allOcrSettled || ocrRunning) return;
+  if(documents.length===0 || includedDocuments().length===0) return;
+  const versionAtStart = documentsVersion;
+  const orderVersionAtStart = outputOrderVersion;
+  try{
+    const blob = await buildMergedPdfBlob();
+    if(documentsVersion !== versionAtStart || outputOrderVersion !== orderVersionAtStart) return; // data/order changed mid-build; discard, don't cache
+    mergedBlob = blob;
+    mergedBlobVersion = versionAtStart;
+    mergedBlobOrderVersion = orderVersionAtStart;
+    downloadMergedBtn.textContent = 'ดาวน์โหลด PDF รวม (จัดเรียงหน้าเสร็จแล้ว)';
+    downloadMergedBtn.disabled = false;
+    downloadMergedBtn.classList.add('ready');
+    setTimeout(()=>downloadMergedBtn.classList.remove('ready'), 3000);
+  }catch(err){
+    // leave the button in its normal state; the click handler will retry
+  }
+}
+async function buildMergedPdfBlob(){
+  const ordered = includedDocuments();
+  const merged = await PDFLib.PDFDocument.create();
+  for(const d of ordered){
+    const src = await getPdfLibDoc(d.fileId);
+    const pages = await merged.copyPages(src, pageRangeArray(d.pageStart, d.pageEnd));
+    pages.forEach(p=>merged.addPage(p));
+  }
+  const bytes = await merged.save();
+  return new Blob([bytes], {type:'application/pdf'});
+}
+// The Thai font used for the downloadable list-summary PDF (drawing text
+// with pdf-lib always needs an embedded font — its own built-in "standard"
+// fonts are Latin-only and have no Thai glyphs at all). In the offline
+// bundle this is pre-embedded as a base64 global (see build_offline.js); in
+// the plain online version (loaded straight from CDNs, no bundling step) it
+// is fetched once from Google Fonts' own GitHub release and cached.
+let thaiFontBytesPromise = null;
+async function getThaiFontBytes(){
+  if(window.__NOTO_THAI_FONT_BYTES) return window.__NOTO_THAI_FONT_BYTES;
+  if(!thaiFontBytesPromise){
+    thaiFontBytesPromise = fetch('https://raw.githubusercontent.com/google/fonts/main/ofl/notosansthai/NotoSansThai%5Bwdth,wght%5D.ttf')
+      .then(r=>r.arrayBuffer()).then(buf=>new Uint8Array(buf));
+  }
+  return thaiFontBytesPromise;
+}
+// Shortens text with a trailing "…" so it fits within maxWidth at the given
+// size, measured against the actual embedded font (a fixed character count
+// would be wrong here — Thai glyphs and Latin glyphs have very different
+// widths, and company names mix both).
+function truncateToWidth(font, text, size, maxWidth){
+  if(font.widthOfTextAtSize(text, size) <= maxWidth) return text;
+  let lo = 0, hi = text.length;
+  while(lo < hi){
+    const mid = (lo + hi + 1) >> 1;
+    const candidate = text.slice(0, mid) + '…';
+    if(font.widthOfTextAtSize(candidate, size) <= maxWidth) lo = mid; else hi = mid - 1;
+  }
+  return lo === 0 ? '…' : text.slice(0, lo) + '…';
+}
+// Builds a landscape A4 PDF report of the sorted document list — company,
+// date, goods value, VAT, total — as a printable/shareable document rather
+// than a spreadsheet file. Deliberately leaves out source file, page
+// number, and status: this is meant to be printed/handed off as a clean
+// list, not a debugging view. Paginates automatically and repeats the
+// header row on every page.
+async function buildSummaryPdfBlob(){
+  const ordered = includedDocuments();
+  const doc = await PDFLib.PDFDocument.create();
+  doc.registerFontkit(fontkit);
+  const fontBytes = await getThaiFontBytes();
+  const font = await doc.embedFont(fontBytes, {subset: true});
+  const PAGE_W = 841.89, PAGE_H = 595.28; // A4 landscape, in points
+  const MARGIN = 36;
+  const usableW = PAGE_W - MARGIN*2;
+  const TITLE_SIZE = 15, META_SIZE = 9, HEADER_SIZE = 9.5, ROW_SIZE = 9;
+  const ROW_H = 20, HEADER_H = 22;
+  const CELL_PAD = 4;
+  const rgb = PDFLib.rgb;
+  const colors = {
+    header: rgb(0.90, 0.92, 0.97),
+    headerText: rgb(0.13, 0.15, 0.22),
+    border: rgb(0.82, 0.83, 0.87),
+    text: rgb(0.15, 0.15, 0.17),
+    dim: rgb(0.48, 0.48, 0.52),
+    warn: rgb(0.72, 0.24, 0.12),
+  };
+  // Printed list keeps only what the user actually wants on the page:
+  // company, date, goods value, VAT, total — no source file, no page
+  // number/range, no status column. "company" absorbs whatever width is
+  // left after the other (content-driven, fixed-width) columns claim theirs.
+  const numCol = {key:'i', header:'#', width:26, align:'left'};
+  const otherFixedCols = [
+    {key:'date', header:'วันที่', width:64, align:'left'},
+    {key:'amount', header:'มูลค่าสินค้า', width:80, align:'right'},
+    {key:'vat', header:'VAT', width:68, align:'right'},
+    {key:'total', header:'รวม', width:80, align:'right'},
+  ];
+  const fixedW = numCol.width + otherFixedCols.reduce((s,c)=>s+c.width, 0);
+  const companyCol = {key:'company', header:'บริษัท', width: Math.max(200, usableW - fixedW), align:'left'};
+  const columns = [numCol, companyCol, ...otherFixedCols];
+  let page = null, y = 0;
+  function drawCell(text, x, width, size, color, align, baselineY){
+    const shown = truncateToWidth(font, String(text==null?'':text), size, width - CELL_PAD*2);
+    const w = font.widthOfTextAtSize(shown, size);
+    const tx = align==='right' ? x + width - CELL_PAD - w : x + CELL_PAD;
+    page.drawText(shown, {x: tx, y: baselineY, size, font, color});
+  }
+  function drawHeaderRow(){
+    page.drawRectangle({x: MARGIN, y: y - HEADER_H, width: usableW, height: HEADER_H, color: colors.header});
+    let x = MARGIN;
+    for(const col of columns){
+      drawCell(col.header, x, col.width, HEADER_SIZE, colors.headerText, col.align, y - HEADER_H + 7);
+      x += col.width;
+    }
+    y -= HEADER_H;
+    page.drawLine({start:{x:MARGIN,y}, end:{x:MARGIN+usableW,y}, thickness:0.75, color: colors.border});
+  }
+  function newPage(withTitle){
+    page = doc.addPage([PAGE_W, PAGE_H]);
+    y = PAGE_H - MARGIN;
+    if(withTitle){
+      page.drawText('รายการเอกสารเรียงตามวันที่', {x: MARGIN, y: y - TITLE_SIZE, size: TITLE_SIZE, font, color: colors.text});
+      y -= TITLE_SIZE + 8;
+      const now = new Date();
+      const genDate = `${pad2(now.getDate())}/${pad2(now.getMonth()+1)}/${now.getFullYear()+543} ${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+      page.drawText(`สร้างเมื่อ ${genDate} · ทั้งหมด ${ordered.length} รายการ`, {x: MARGIN, y: y - META_SIZE, size: META_SIZE, font, color: colors.dim});
+      y -= META_SIZE + 10;
+    }
+    drawHeaderRow();
+  }
+  newPage(true);
+  ordered.forEach((d, i)=>{
+    if(y - ROW_H < MARGIN){
+      newPage(false);
+    }
+    if(i % 2 === 1){
+      page.drawRectangle({x: MARGIN, y: y - ROW_H, width: usableW, height: ROW_H, color: rgb(0.97,0.97,0.98)});
+    }
+    const total = (d.amountInfo && d.vatInfo) ? formatThaiNumber(d.amountInfo.value + d.vatInfo.value) : '';
+    const rowVals = {
+      i: i+1,
+      company: d.companyInfo ? d.companyInfo.name : '—',
+      date: d.dateInfo ? d.dateInfo.display : '—',
+      amount: d.amountInfo ? d.amountInfo.display : '—',
+      vat: d.vatInfo ? d.vatInfo.display : '—',
+      total: total || '—',
+    };
+    let x = MARGIN;
+    const baselineY = y - ROW_H + 6;
+    for(const col of columns){
+      const isWarn = (col.key==='company' && d.companySuspicious) || (col.key==='date' && d.dateSuspicious);
+      drawCell(rowVals[col.key], x, col.width, ROW_SIZE, isWarn ? colors.warn : colors.text, col.align, baselineY);
+      x += col.width;
+    }
+    y -= ROW_H;
+    page.drawLine({start:{x:MARGIN,y}, end:{x:MARGIN+usableW,y}, thickness:0.5, color: colors.border});
+  });
+  // Footnote + page numbers on every page.
+  const pages = doc.getPages();
+  pages.forEach((p, idx)=>{
+    p.drawText('* ควรตรวจสอบ — อ่านได้จาก OCR แต่ผลลัพธ์อาจไม่ถูกต้อง', {x: MARGIN, y: 18, size: 7.5, font, color: colors.dim});
+    const label = `หน้า ${idx+1}/${pages.length}`;
+    const w = font.widthOfTextAtSize(label, 7.5);
+    p.drawText(label, {x: PAGE_W - MARGIN - w, y: 18, size: 7.5, font, color: colors.dim});
+  });
+  const bytes = await doc.save();
+  return new Blob([bytes], {type:'application/pdf'});
+}
+function renderQueue(){
+  queueEl.innerHTML = '';
+  files.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'queue-item';
+    let statusHtml = '';
+    if(item.status==='pending' || item.status==='processing'){
+      statusHtml = `<div class="spinner"></div><span class="status">กำลังอ่าน...</span>`;
+    }else if(item.status==='done'){
+      const docCount = groupPagesIntoDocuments(item.pageTexts).length;
+      statusHtml = `<span class="status">${item.pageCount} หน้า · พบ ${docCount} เอกสาร</span>`;
+    }else if(item.status==='error'){
+      statusHtml = `<span class="status">✕ ${item.error}</span>`;
+    }
+    row.innerHTML = `<span class="name">${item.name}</span>${statusHtml}`;
+    queueEl.appendChild(row);
+  });
+}
+function docLabel(d){
+  const pages = d.pageStart===d.pageEnd ? `หน้า ${d.pageStart+1}` : `หน้า ${d.pageStart+1}-${d.pageEnd+1}`;
+  return pages;
+}
+function sortedDocuments(){
+  const dated = documents.filter(d=>d.dateInfo).sort((a,b)=>a.dateInfo.sortKey-b.dateInfo.sortKey);
+  const undated = documents.filter(d=>!d.dateInfo);
+  return {dated, undated};
+}
+// The order actually shown in the table: automatic date order unless the
+// user has manually moved a row (manualOrderKeys !== null), in which case
+// that explicit order is used instead — with any document not yet present
+// in it (a newly added file, or a key that changed) appended at the end in
+// automatic order, so nothing silently drops out of the list. Excluded
+// documents are NOT filtered out here — they still need to show up (grayed
+// out) so the user can re-include them; use includedDocuments() for output.
+function finalOrderedDocuments(){
+  const {dated, undated} = sortedDocuments();
+  const autoOrder = [...dated, ...undated];
+  if(!manualOrderKeys) return autoOrder;
+  const byKey = new Map(autoOrder.map(d=>[overrideKey(d.fileId, d.pageStart), d]));
+  const seen = new Set();
+  const ordered = [];
+  manualOrderKeys.forEach(k=>{
+    const d = byKey.get(k);
+    if(d && !seen.has(k)){ ordered.push(d); seen.add(k); }
+  });
+  autoOrder.forEach(d=>{
+    const k = overrideKey(d.fileId, d.pageStart);
+    if(!seen.has(k)){ ordered.push(d); seen.add(k); }
+  });
+  return ordered;
+}
+// The order + set actually used for every export (merged PDF, ZIP, CSV, PDF
+// list) — final table order with excluded documents dropped.
+function includedDocuments(){
+  return finalOrderedDocuments().filter(d => !excludedDocKeys.has(overrideKey(d.fileId, d.pageStart)));
+}
+// Invalidates the pre-built merged-PDF cache and kicks off a fresh
+// background rebuild under the new order/inclusion set, so the download
+// button is ready again shortly after a reorder/exclude change instead of
+// only rebuilding lazily on click.
+function invalidateOutputOrder(){
+  outputOrderVersion++;
+  mergedBlob = null;
+  downloadMergedBtn.classList.remove('ready');
+  renderResults();
+  maybeAutoBuildMerged();
+}
+function moveDocumentInOrder(key, direction){
+  const current = finalOrderedDocuments().map(d=>overrideKey(d.fileId, d.pageStart));
+  const idx = current.indexOf(key);
+  if(idx<0) return;
+  const swapWith = idx + direction;
+  if(swapWith<0 || swapWith>=current.length) return;
+  [current[idx], current[swapWith]] = [current[swapWith], current[idx]];
+  manualOrderKeys = current;
+  invalidateOutputOrder();
+}
+function resetManualOrder(){
+  manualOrderKeys = null;
+  invalidateOutputOrder();
+}
+function toggleDocExcluded(key, excluded){
+  if(excluded) excludedDocKeys.add(key); else excludedDocKeys.delete(key);
+  invalidateOutputOrder();
+}
+function statusBadge(d){
+  const missingParts = [];
+  if(!d.dateInfo) missingParts.push('วันที่');
+  if(!d.companyInfo) missingParts.push('บริษัท');
+  if(missingParts.length>0){
+    return `<span class="badge missing">ไม่พบ${missingParts.join('/')}</span>`;
+  }
+  if(d.companyInfo && d.companyInfo.guessed){
+    return `<span class="badge guess">คาดเดา</span>`;
+  }
+  return d.ocr ? `<span class="badge auto">OCR</span>` : `<span class="badge auto">อัตโนมัติ</span>`;
+}
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function renderResults(){
+  // A background OCR-fallback pass finishing on some other page calls this
+  // on its own, independent of anything the user is doing. If a cell editor
+  // is currently open, skip the repaint entirely rather than blow away the
+  // <select>/input under the user's fingers — openCellEditor()/the save and
+  // cancel handlers clear activeEditor and call renderResults() again
+  // themselves once the user is done, so the latest data (including
+  // whatever OCR found in the meantime — rebuildDocuments() still runs
+  // every pass regardless of this) is shown as soon as they finish.
+  if(activeEditor) return;
+  const allOrdered = finalOrderedDocuments(); // full table order, includes excluded (grayed out)
+  const included = includedDocuments(); // what exports actually use
+  // Timeline is always strictly chronological among included documents,
+  // independent of any manual table reorder — the visualization is about
+  // real dates, not the user's manual fix-up for export ordering.
+  const dated = included.filter(d=>d.dateInfo).sort((a,b)=>a.dateInfo.sortKey-b.dateInfo.sortKey);
+  // Timeline
+  timelineTrack.querySelectorAll('.marker, .end-label').forEach(m=>m.remove());
+  if(dated.length===0){
+    timelineEmpty.style.display = 'block';
+  }else{
+    timelineEmpty.style.display = 'none';
+    const min = dated[0].dateInfo.sortKey;
+    const max = dated[dated.length-1].dateInfo.sortKey;
+    const span = max - min;
+    dated.forEach((d,i)=>{
+      const pct = span===0 ? (dated.length===1?50: (i/(dated.length-1))*100) : ((d.dateInfo.sortKey-min)/span)*100;
+      const marker = document.createElement('div');
+      marker.className = 'marker';
+      marker.style.left = pct+'%';
+      const tooltip = `${d.fileName} ${docLabel(d)}${d.companyInfo ? ' · ' + d.companyInfo.name : ''}`;
+      marker.innerHTML = `<div class="stamp">${d.dateInfo.display}</div><div class="dot"></div><div class="fname" title="${escapeHtml(tooltip)}">${d.companyInfo ? escapeHtml(d.companyInfo.name) : docLabel(d)}</div>`;
+      timelineTrack.appendChild(marker);
+    });
+    const startLabel = document.createElement('div');
+    startLabel.className = 'end-label start';
+    startLabel.textContent = 'เก่าสุด';
+    const endLabel = document.createElement('div');
+    endLabel.className = 'end-label end';
+    endLabel.textContent = 'ใหม่สุด';
+    timelineTrack.appendChild(startLabel);
+    timelineTrack.appendChild(endLabel);
+  }
+  // Table — always shows ALL documents (including excluded ones, grayed
+  // out) in the current table order, so excluding one is reversible.
+  const combined = allOrdered;
+  if(combined.length===0){
+    resultsBody.innerHTML = `<tr><td colspan="9" class="empty-note">ยังไม่มีไฟล์ที่ประมวลผลแล้ว</td></tr>`;
+  }else{
+    const multiFile = files.length > 1;
+    resultsBody.innerHTML = combined.map((d,i)=>{
+      const badge = statusBadge(d);
+      const key = overrideKey(d.fileId, d.pageStart);
+      const isExcluded = excludedDocKeys.has(key);
+      const rowClass = isExcluded ? ' class="excluded-row"' : '';
+      const isFirst = i===0, isLast = i===combined.length-1;
+      const orderCell = `<td><div class="order-cell"><span class="order-badge">${i+1}</span><span class="move-btns">
+          <button type="button" class="move-btn" data-key="${escapeHtml(key)}" data-dir="-1" title="เลื่อนขึ้น" ${isFirst?'disabled':''}>▲</button>
+          <button type="button" class="move-btn" data-key="${escapeHtml(key)}" data-dir="1" title="เลื่อนลง" ${isLast?'disabled':''}>▼</button>
+        </span></div></td>`;
+      const includeCell = `<td><input type="checkbox" class="include-toggle" data-key="${escapeHtml(key)}" ${isExcluded?'':'checked'} title="รวมเอกสารนี้ในผลลัพธ์/ดาวน์โหลด"/></td>`;
+      const dateText = d.dateInfo ? d.dateInfo.display : '—';
+      const srcText = multiFile ? d.fileName : '—';
+      const companyText = d.companyInfo ? escapeHtml(d.companyInfo.name) + (d.companyInfo.guessed ? ' ?' : '') : '—';
+      const companyClass = !d.companyInfo ? 'companycell empty' : (d.companyInfo.guessed ? 'companycell guessed' : 'companycell');
+      const companyTitle = d.companyInfo
+        ? ` title="${escapeHtml(d.companyInfo.name)}${d.companyInfo.guessed ? ' (คาดเดาจากข้อความตัวใหญ่สุดด้านบนของหน้า — ไม่พบรูปแบบชื่อบริษัทที่ชัดเจน)' : ''}"`
+        : '';
+      const companyWarn = d.companySuspicious
+        ? `<span class="warn-flag" title="อาจเป็นชื่อผู้ซื้อ/ลูกค้า ไม่ใช่ชื่อผู้ขาย — ตรวจสอบหรือแก้ไขได้">⚠️</span>` : '';
+      const dateWarn = d.dateSuspicious
+        ? `<span class="warn-flag" title="ปีนี้ต่างจากเอกสารส่วนใหญ่ในชุดนี้มาก อาจเป็นการอ่านตัวเลขผิดพลาด — ตรวจสอบหรือแก้ไขได้">⚠️</span>` : '';
+      const companyMark = d.companyOverridden ? `<span class="overridden-mark" title="แก้ไขโดยผู้ใช้">✓ แก้ไขแล้ว</span>` : '';
+      const dateMark = d.dateOverridden ? `<span class="overridden-mark" title="แก้ไขโดยผู้ใช้">✓ แก้ไขแล้ว</span>` : '';
+      const amountText = d.amountInfo ? d.amountInfo.display : '—';
+      const amountClass = d.amountInfo ? 'datecell' : 'datecell companycell empty';
+      const amountMark = d.amountOverridden ? `<span class="overridden-mark" title="แก้ไขโดยผู้ใช้">✓</span>` : '';
+      const vatText = d.vatInfo ? d.vatInfo.display : '—';
+      const vatClass = d.vatInfo ? 'datecell' : 'datecell companycell empty';
+      const vatMark = d.vatOverridden ? `<span class="overridden-mark" title="แก้ไขโดยผู้ใช้">✓</span>` : '';
+      return `<tr${rowClass}>
+        ${includeCell}
+        ${orderCell}
+        <td>${docLabel(d)}</td>
+        <td class="srccell">${srcText}</td>
+        <td class="${companyClass} editable-cell" data-key="${escapeHtml(key)}" data-field="company"${companyTitle}>${companyWarn}<span class="cell-value">${companyText}</span>${companyMark}<button class="edit-btn" data-key="${escapeHtml(key)}" data-field="company" title="แก้ไขชื่อบริษัท">✎</button></td>
+        <td class="datecell editable-cell" data-key="${escapeHtml(key)}" data-field="date">${dateWarn}<span class="cell-value">${dateText}</span>${dateMark}<button class="edit-btn" data-key="${escapeHtml(key)}" data-field="date" title="แก้ไขวันที่">✎</button></td>
+        <td class="${amountClass} editable-cell" data-key="${escapeHtml(key)}" data-field="amount"><span class="cell-value">${amountText}</span>${amountMark}<button class="edit-btn" data-key="${escapeHtml(key)}" data-field="amount" title="แก้ไขมูลค่าสินค้า/บริการ">✎</button></td>
+        <td class="${vatClass} editable-cell" data-key="${escapeHtml(key)}" data-field="vat"><span class="cell-value">${vatText}</span>${vatMark}<button class="edit-btn" data-key="${escapeHtml(key)}" data-field="vat" title="แก้ไขภาษีมูลค่าเพิ่ม">✎</button></td>
+        <td>${badge}</td>
+      </tr>`;
+    }).join('');
+  }
+  const missingDateCount = included.filter(d=>!d.dateInfo).length;
+  const missingCompanyCount = included.filter(d=>!d.companyInfo).length;
+  if(missingDateCount>0 || missingCompanyCount>0){
+    missingNote.style.display = 'block';
+    const parts = [];
+    if(missingDateCount>0) parts.push(`หาวันที่ไม่เจอ ${missingDateCount} รายการ (วางไว้ท้ายรายการ)`);
+    if(missingCompanyCount>0) parts.push(`หาชื่อบริษัทไม่เจอ ${missingCompanyCount} รายการ`);
+    missingNote.textContent = `หมายเหตุ: ${parts.join(' · ')} — ยังรวมไฟล์/ดาวน์โหลดได้ตามปกติ`;
+  }else{
+    missingNote.style.display = 'none';
+  }
+  downloadMergedBtn.disabled = included.length===0;
+  downloadZipBtn.disabled = included.length===0;
+  downloadCsvBtn.disabled = included.length===0;
+  downloadListPdfBtn.disabled = included.length===0;
+  resetOrderBtn.style.display = manualOrderKeys ? 'inline-block' : 'none';
+}
+async function getPdfLibDoc(fileId){
+  if(!pdfLibCache.has(fileId)){
+    const item = files.find(f=>f.id===fileId);
+    const buf = await item.file.arrayBuffer();
+    const doc = await PDFLib.PDFDocument.load(buf);
+    pdfLibCache.set(fileId, doc);
+  }
+  return pdfLibCache.get(fileId);
+}
+function pageRangeArray(start,end){
+  const arr = [];
+  for(let p=start;p<=end;p++) arr.push(p);
+  return arr;
+}
+/* ---------------- Downloads ---------------- */
+downloadMergedBtn.addEventListener('click', async ()=>{
+  if(mergedBlob && mergedBlobVersion === documentsVersion && mergedBlobOrderVersion === outputOrderVersion){
+    triggerDownload(mergedBlob, 'sorted-merged.pdf');
+    return;
+  }
+  downloadMergedBtn.disabled = true;
+  downloadMergedBtn.textContent = 'กำลังรวมไฟล์...';
+  try{
+    const versionAtStart = documentsVersion;
+    const orderVersionAtStart = outputOrderVersion;
+    const blob = await buildMergedPdfBlob();
+    if(documentsVersion === versionAtStart && outputOrderVersion === orderVersionAtStart){
+      mergedBlob = blob;
+      mergedBlobVersion = versionAtStart;
+      mergedBlobOrderVersion = orderVersionAtStart;
+    }
+    triggerDownload(blob, 'sorted-merged.pdf');
+  }catch(err){
+    alert('รวมไฟล์ไม่สำเร็จ: ' + err.message);
+  }
+  downloadMergedBtn.textContent = 'ดาวน์โหลด PDF รวม (เรียงแล้ว)';
+  renderResults();
+});
+downloadZipBtn.addEventListener('click', async ()=>{
+  downloadZipBtn.disabled = true;
+  downloadZipBtn.textContent = 'กำลังสร้าง ZIP...';
+  try{
+    const ordered = includedDocuments();
+    const zip = new JSZip();
+    for(let i=0;i<ordered.length;i++){
+      const d = ordered[i];
+      const src = await getPdfLibDoc(d.fileId);
+      const out = await PDFLib.PDFDocument.create();
+      const pages = await out.copyPages(src, pageRangeArray(d.pageStart, d.pageEnd));
+      pages.forEach(p=>out.addPage(p));
+      const bytes = await out.save();
+      const dateTag = d.dateInfo ? d.dateInfo.display.replace(/\//g,'-') : 'no-date';
+      const companySlug = d.companyInfo ? slugify(d.companyInfo.name) : '';
+      const filename = `${String(i+1).padStart(2,'0')}_${dateTag}${companySlug ? '_'+companySlug : ''}.pdf`;
+      zip.file(filename, bytes);
+    }
+    const blob = await zip.generateAsync({type:'blob'});
+    triggerDownload(blob, 'sorted-documents.zip');
+  }catch(err){
+    alert('สร้าง ZIP ไม่สำเร็จ: ' + err.message);
+  }
+  downloadZipBtn.textContent = 'ดาวน์โหลด ZIP (แยกเอกสาร เรียงเลขนำหน้า)';
+  renderResults();
+});
+// One CSV row per field escaped per RFC 4180 (wrap in quotes, double up any
+// quote inside) — needed since a company name can itself contain a comma.
+function csvField(v){
+  const s = v===null || v===undefined ? '' : String(v);
+  return `"${s.replace(/"/g,'""')}"`;
+}
+downloadCsvBtn.addEventListener('click', ()=>{
+  const ordered = includedDocuments();
+  const header =['ลำดับ','เอกสาร','ไฟล์ต้นทาง','บริษัทที่พบ','วันที่ที่พบ','มูลค่าสินค้า/บริการ','ภาษีมูลค่าเพิ่ม','รวมทั้งสิ้น','สถานะ'];
+  const rows = ordered.map((d,i)=>{
+    const total = (d.amountInfo && d.vatInfo) ? formatThaiNumber(d.amountInfo.value + d.vatInfo.value) : '';
+    return [
+      i+1,
+      docLabel(d),
+      d.fileName,
+      d.companyInfo ? d.companyInfo.name : '',
+      d.dateInfo ? d.dateInfo.display : '',
+      d.amountInfo ? d.amountInfo.display : '',
+      d.vatInfo ? d.vatInfo.display : '',
+      total,
+      d.dateInfo ? '' : 'ไม่พบวันที่',
+    ].map(csvField).join(',');
+  });
+  // ﻿ (UTF-8 BOM) so Excel opens the file with Thai characters intact
+  // instead of misreading it as a different encoding.
+  const csvContent = '﻿' + [header.map(csvField).join(','), ...rows].join('\r\n');
+  const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8'});
+  triggerDownload(blob, 'sorted-documents.csv');
+});
+downloadListPdfBtn.addEventListener('click', async ()=>{
+  downloadListPdfBtn.disabled = true;
+  const originalText = downloadListPdfBtn.textContent;
+  downloadListPdfBtn.textContent = 'กำลังสร้าง PDF...';
+  try{
+    const blob = await buildSummaryPdfBlob();
+    triggerDownload(blob, 'sorted-documents-list.pdf');
+  }catch(err){
+    alert('สร้าง PDF รายการไม่สำเร็จ: ' + err.message);
+  }
+  downloadListPdfBtn.textContent = originalText;
+  downloadListPdfBtn.disabled = includedDocuments().length===0;
+});
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
